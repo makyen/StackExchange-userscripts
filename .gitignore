@@ -1,0 +1,62 @@
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+# git has its own built in compression methods
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+*.xpi
+
+# Logs and databases #
+######################
+*.log
+*.sql
+*.sqlite
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backups and Original files#
+#############################
+*.ORIG
+*.bak
+*.OLD
+*.OLD[0-9]
+*.unknown
+*.unknown[0-9]
+*.updated
+*.updated[0-9]
+Copy *
+* - Copy*
+OLD
+OLD*
+OLD[0-9]
+OLD[0-9][0-9]
+tmp
+*.tmp
+foo
+*.foo
+*checkpoint
+test/
+build/

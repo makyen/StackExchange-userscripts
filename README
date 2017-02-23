@@ -1,0 +1,10 @@
+This repository is for user scripts for Stack Exchange.
+
+RoombaForecaster.user.js
+    Adds a "roomba" line under "viewed"/"active" in the top-right on
+    questions with information as to the question's status with
+    respect to being deleted by Roomba and how long to deletion. 
+    Additional information as to why the question is not qualified for
+    Roomba is, by default, displayed upon hovering over the "roomba"
+    line.
+    Click on the 'roomba' line to open an options dialog.
