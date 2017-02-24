@@ -8,7 +8,7 @@ by [Roomba](http://stackoverflow.com/help/roomba), and how long until
 the question is deleted. Why Roomba won't delete the question is, by default, displayed in a tooltip.  You can
 click on the "roomba" status line to open an options dialog to change display settings.
 
-####Additional information in tooltip (default)
+###Additional information in tooltip (default)
 The reason(s) the question does not qualify for the three different Roomba tasks is included in a table.  The table is, by default displayed in a tooltip which is displayed when the mouse hovers over the "roomba" status line.
  
 Roomba line with tooltip displayed:  
@@ -16,7 +16,7 @@ Roomba line with tooltip displayed:
 
 The table can, alternately, always be visible by selecting the appropriate display option.
 
-####Show if your downvote(s) can qualify the question to be Roomb'ed (default)
+###Show if your downvote(s) can qualify the question to be Roomb'ed (default)
 In addition, the default is to display if you downvoting on the 
 
 question | answer(s)
@@ -24,7 +24,7 @@ question | answer(s)
 ![downvote question will roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/downvote-question-will-roomba.png) | ![downvote answer will roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/downvote-answer-will-roomba.png)
 will qualify the question to be Roomba'ed: 
 
-####Number of days to deletion
+###Number of days to deletion
 If the question will be deleted by Roomba, then the number of days until it is deleted is displayed. 
 
 One Roomba task runs daily | Two Roomba tasks run weekly<sup>1</sup>   
@@ -41,7 +41,7 @@ looks with the various different options:
 
 Clicking on the <kbd>Close</kbd> button will keep the selected options for use on this page only. <kbd>Save</kbd> will store the options for use on all pages.
 
-####Short descriptions in the status line
+###Short descriptions in the status line
 The optional short descriptions in the "roomba" status line are cryptic.   
 ![short reasons](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/short-reasons.png)  
 The best way to learn what they mean is to match them up against what
@@ -49,7 +49,7 @@ is displayed in the larger table (either as a tooltip, or
 always displayed).  
 ![short reasons](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/tooltip-short-reasons.png)
 
-####Scraping the page or using the Stack Exchange API 
+###Scraping the page or using the Stack Exchange API 
 You can also select to use the Stack Exchange API to
 obtain the data for the question, or to scrape the page.  All the data
 is available in each question page. Scraping the page is faster than
@@ -60,7 +60,7 @@ of requests being made for all the scripts you are using. If so,
 scraping the page will consume none of your quota.
 
 
-###Compatibility Notes
+##Compatibility Notes
 The tooltip is styled to look like a native tooltip in the browsers which were tested: Chrome, Firefox, Opera, and Edge. Thus, the tooltip will look slightly different in in each browser. The images above are from Chrome. 
 
 ----------------------------
