@@ -1,61 +1,73 @@
-#Roomba Forecaster
-[install](https://github.com/makyen/StackExchange-userscripts/raw/master/RoombaForecaster/RoombaForecaster.user.js)
+#Roomba Forecaster ([install](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/RoombaForecaster.user.js))
 
-Adds a "roomba" line under "viewed"/"active" in the top-right of question pages which shows if the question
-is qualified to be deleted by [Roomba](http://stackoverflow.com/help/roomba).  How the information is diplayed is selectable through
-options. The default is to display if the question is qualified to be Roomba'ed, and if so how long until it is deleted. Additional information
-as to why a question is not qualified for Roomba is, by default, displayed in a tooltip:  
-![tooltip](https://github.com/makyen/StackExchange-userscripts/raw/master/RoombaForecaster/README-assets/tooltip.png)
-In addition, the default is to display if downvoting on the question  
-![downvote question will roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/RoombaForecaster/README-assets/downvote-question-will-roomba.png)
-or answer(s):  
-![downvote answer will roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/RoombaForecaster/README-assets/downvote-question-will-roomba.png)
+Shows the question's status with respect to being deleted by Roomba.
+
+The script adds a "roomba" status line under "viewed"/"active" in the top-right of
+question pages which shows if the question will be deleted
+by [Roomba](http://stackoverflow.com/help/roomba), and how long until
+the question is deleted. Why Roomba won't delete the question is, by default, displayed in a tooltip.  You can
+click on the "roomba" status line to open an options dialog to change display settings.
+
+####Additional information in tooltip (default)
+The reason(s) the question does not qualify for the three different Roomba tasks is included in a table.  The table is, by default displayed in a tooltip which is displayed when the mouse hovers over the "roomba" status line.
+ 
+Roomba line with tooltip displayed:  
+![tooltip](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/tooltip.png)
+
+The table can, alternately, always be visible by selecting the appropriate display option.
+
+####Show if your downvote(s) can qualify the question to be Roomb'ed (default)
+In addition, the default is to display if you downvoting on the 
+
+question | answer(s)
+:-------------------------:|:-------------------------:  
+![downvote question will roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/downvote-question-will-roomba.png) | ![downvote answer will roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/downvote-answer-will-roomba.png)
 will qualify the question to be Roomba'ed: 
 
-If the question will be deleted by Roomba, then the number of days until it is deleted is displayed. One roomba task runs daily:  
-![daily roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/RoombaForecaster/README-assets/daily-20days.png)
-Two rooma tasks run weekly<sup>1</sup>  
-![weekly roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/RoombaForecaster/README-assets/weekly-29days.png)
+####Number of days to deletion
+If the question will be deleted by Roomba, then the number of days until it is deleted is displayed. 
 
-Additional information as to why the question is not qualified for
-Roomba is, by default, displayed tooltip-like upon hovering over the "roomba" line.  
-![Roomba tooltip](https://github.com/makyen/StackExchange-userscripts/raw/master/RoombaForecaster/README-assets/.png)
+One Roomba task runs daily | Two Roomba tasks run weekly<sup>1</sup>   
+:-------------------------:|:-------------------------:
+![daily roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/daily-20days.png) | ![weekly roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/weekly-29days.png)
+
+
 
 ##Options
-Clicking on the 'roomba' line will open an options dialog where you
-can select what is displayed.  The following gif shows how the display
+Clicking on the "roomba" status line will open an options dialog where you
+can select what is displayed.  The following GIF shows how the display
 looks with the various different options:  
-![RoombaForecaster options](https://github.com/makyen/StackExchange-userscripts/raw/master/RoombaForecaster/README-assets/options.gif)
+![Roomba Forecaster options](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/options.gif)
 
-The optional short descritpions in the roomba status line are cryptic.   
-![short reasons](https://github.com/makyen/StackExchange-userscripts/raw/master/RoombaForecaster/README-assets/short-reasons.png)
+Clicking on the <kbd>Close</kbd> button will keep the selected options for use on this page only. <kbd>Save</kbd> will store the options for use on all pages.
+
+####Short descriptions in the status line
+The optional short descriptions in the "roomba" status line are cryptic.   
+![short reasons](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/short-reasons.png)  
 The best way to learn what they mean is to match them up against what
 is displayed in the larger table (either as a tooltip, or
-always displayed).
-![short reasons](https://github.com/makyen/StackExchange-userscripts/raw/master/RoombaForecaster/README-assets/tooltip-short-reasons.png)
+always displayed).  
+![short reasons](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/tooltip-short-reasons.png)
 
-You can also select if you desire to use the Stack Exchange API to
+####Scraping the page or using the Stack Exchange API 
+You can also select to use the Stack Exchange API to
 obtain the data for the question, or to scrape the page.  All the data
-is available in each question page.  Scraping the page is faster than
-making an API request.  If you would prefer the data to be obtained
-from the Stack exchange API, you can select to do so.  For power
+is available in each question page. Scraping the page is faster than
+making an API request. If you would prefer the data to be obtained
+from the Stack exchange API, you can select to do so. For power
 users, it is possible you might be concerned about the overall number
-of requests being made for all the scripts you are using.  If so,
+of requests being made for all the scripts you are using. If so,
 scraping the page will consume none of your quota.
 
 
-
-
-
+###Compatibility Notes
+The tooltip is styled to look like a native tooltip in the browsers which were tested: Chrome, Firefox, Opera, and Edge. Thus, the tooltip will look slightly different in in each browser. The images above are from Chrome. 
 
 ----------------------------
-<sup>1.  Actualy, four Roomba tasks run weekly.  The other two only
-affect questions migrated to or from the curent Stack Exchange site. 
-While the code should detect these, doing so is untested due to the
-Stack Exchange system automatically forwarding the page to the new
-site when the question was migrated away from the current one, or to
-the old site when the question was rejected from the current
-one.</sup>
+<sup>1.  Actually, four Roomba tasks run weekly.  The other two only
+affect questions migrated to another Stack Exchange site, or from another site and rejected. 
+While the script should detect these, doing so is untested due to the
+Stack Exchange system automatically forwarding the page to the site where the question currently exists. Thus, unless something changes in how Stack Exchange shows such questions, it is unlikely that you will see one.</sup>
 
 <sup>This is a fork of [RoombaForecast](https://github.com/Siguza/StackScripts/blob/master/RoombaForecast.user.js).</sup>
 
