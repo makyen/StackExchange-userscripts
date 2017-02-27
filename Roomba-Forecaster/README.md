@@ -1,6 +1,6 @@
 #Roomba Forecaster ([install](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/RoombaForecaster.user.js))
 
-Shows the question's status with respect to being deleted by Roomba.
+Roomba Forecaster shows the question's status with respect to being deleted by Roomba.
 
 The script adds a "roomba" status line under "viewed"/"active" in the top-right of
 question pages which shows if the question will be deleted
@@ -9,18 +9,18 @@ the question is deleted. Why Roomba won't delete the question is, by default, di
 [![Roomba Forecaster location on the page](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/location-on-page-with-red-circle-660px.png)](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/location-on-page-with-red-circle.png)
 
 ###Additional information in tooltip (default)
-The reason(s) the question does not qualify for the three different Roomba tasks is included in a table.  The table is, by default displayed in a tooltip when the mouse hovers over the "roomba" status line:    
+The reasons the question does not qualify for the three different Roomba tasks is included in a table.  The table is, by default displayed in a tooltip when the mouse hovers over the "roomba" status line:    
 ![tooltip](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/tooltip.png)
 
-The table can, alternately, always be visible by selecting the appropriate display option.
+Alternately, the table can be always visible by selecting the appropriate display option.
 
-###Show if your downvote(s) can qualify the question to be Roomb'ed (default)
-In addition, the default is to display if you downvoting on the 
+###Show if your down-vote(s) can qualify the question to be Roomb'ed (default)
+In addition, the default is to display if you down-voting on the question and/or answer(s) will qualify the question to be Roomba'ed.
 
 question | answer(s)
 :-------------------------:|:-------------------------:  
 ![downvote question will roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/downvote-question-will-roomba.png) | ![downvote answer will roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/downvote-answer-will-roomba.png)
-will qualify the question to be Roomba'ed. 
+
 
 ###Number of days to deletion
 If the question will be deleted by Roomba, then the number of days until it is deleted is displayed. 
