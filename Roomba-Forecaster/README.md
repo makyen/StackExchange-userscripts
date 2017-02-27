@@ -9,9 +9,7 @@ the question is deleted. Why Roomba won't delete the question is, by default, di
 [![Roomba Forecaster location on the page](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/location-on-page-with-red-circle-660px.png)](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/location-on-page-with-red-circle.png)
 
 ###Additional information in tooltip (default)
-The reason(s) the question does not qualify for the three different Roomba tasks is included in a table.  The table is, by default displayed in a tooltip which is displayed when the mouse hovers over the "roomba" status line.
- 
-Roomba line with tooltip displayed:  
+The reason(s) the question does not qualify for the three different Roomba tasks is included in a table.  The table is, by default displayed in a tooltip when the mouse hovers over the "roomba" status line:    
 ![tooltip](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/tooltip.png)
 
 The table can, alternately, always be visible by selecting the appropriate display option.
@@ -31,8 +29,6 @@ One Roomba task runs daily | Two Roomba tasks run weekly<sup>1</sup>
 :-------------------------:|:-------------------------:
 ![daily roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/daily-20days.png) | ![weekly roomba](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/weekly-29days.png)
 
-
-
 ##Options
 Clicking on the "roomba" status line will open an options dialog where you
 can select what is displayed.  The following GIF shows how the display
@@ -49,25 +45,12 @@ is displayed in the larger table (either as a tooltip, or
 always displayed).  
 ![short reasons](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/tooltip-short-reasons.png)
 
-###Scraping the page or using the Stack Exchange API 
-You can also select to use the Stack Exchange API to
-obtain the data for the question, or to scrape the page.  All the data
-is available in each question page. Scraping the page is faster than
-making an API request. If you would prefer the data to be obtained
-from the Stack exchange API, you can select to do so. For power
-users, it is possible you might be concerned about the overall number
-of requests being made for all the scripts you are using. If so,
-scraping the page will consume none of your quota.
-
-
 ##Compatibility Notes
 The tooltip is styled to look like a native tooltip in the browsers which were tested: Chrome, Firefox, Opera, and Edge. Thus, the tooltip will look slightly different in in each browser. The images above are from Chrome. 
 
 ----------------------------
 <sup>1.  Actually, four Roomba tasks run weekly.  The other two only
-affect questions migrated to another Stack Exchange site, or from another site and rejected. 
-While the script should detect these, doing so is untested due to the
-Stack Exchange system automatically forwarding the page to the site where the question currently exists. Thus, unless something changes in how Stack Exchange shows such questions, it is unlikely that you will see one.</sup>
+affect questions migrated to another Stack Exchange site or from another site and rejected. While the script should detect these, the Stack Exchange system automatically forwards the page to the site where the question currently exists. Thus, unless something changes in how Stack Exchange shows such questions, it is unlikely that you will see one.</sup>
 
 <sup>This is a fork of [RoombaForecast](https://github.com/Siguza/StackScripts/blob/master/RoombaForecast.user.js).</sup>
 
