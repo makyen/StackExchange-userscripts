@@ -2,7 +2,7 @@
 // @name         Roomba Forecaster
 // @author       Makyen
 // @author       Siguza
-// @version      2.0.0beta1
+// @version      2.0.0beta2.pre1
 // @description  Is Roomba going to delete the question? If not, why? If so, when?
 // @namespace    makyen-RoombaForecaster
 // @homepage     https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster
@@ -837,6 +837,39 @@
                 function makeRoombaHtml(curRoomba){
                     //Create the HTML that will be used for the roomba entry. This will either be the HTML of
                     //  the lists of reasons (long and short), or the number of days remaining until deletion.
+                    function getFirstPossibleWeeklyRoombaPastDate(dateSeconds){
+                        //Compute the first time a weekly Roomba will run after the time specified in seconds.
+                        function getSecondsFromWeekStart(day,hour,minute,second){
+                            day = isNaN(+day)?0:+day;
+                            hour = isNaN(+hour)?0:+hour;
+                            minute = isNaN(+minute)?0:+minute;
+                            second = isNaN(+second)?0:+second;
+                            return (((24*day) + hour)*60 + minute )*60 + second;
+                        }
+
+                        //The weekly Roomba runs on the Saturday (day of the week 6) at about 00:30 UTC (based on observation).
+                        const weeklyRoombaUTCDay = 6;
+                        const weeklyRoombaUTCHour = 0;
+                        const weeklyRoombaUTCminutes = 30;
+
+                        let firstPossibleRoomba = {};
+                        //Convert the date/time in seconds to a day of the week, hour, and minute (ignore seconds).
+                        firstPossibleRoomba.date = new Date(dateSeconds * 1000);
+                        firstPossibleRoomba.weekDay = firstPossibleRoomba.date.getUTCDay();
+                        firstPossibleRoomba.hour = firstPossibleRoomba.date.getUTCHours();
+                        firstPossibleRoomba.minute = firstPossibleRoomba.date.getUTCMinutes();
+                        firstPossibleRoomba.second = firstPossibleRoomba.date.getUTCSeconds();
+                        firstPossibleRoomba.monthDay = firstPossibleRoomba.date.getUTCDate();
+                        //Find the seconds between the date provided and when the first weekly Roomba will run. 
+                        let relativeWeeklyRoombaSeconds  = getSecondsFromWeekStart(weeklyRoombaUTCDay, weeklyRoombaUTCHour, weeklyRoombaUTCminutes);
+                        let relativeCreatedSeconds = getSecondsFromWeekStart(firstPossibleRoomba.weekDay, firstPossibleRoomba.hour, firstPossibleRoomba.minute, firstPossibleRoomba.second);
+                        let additionalSecondsToFirstRoomba = relativeWeeklyRoombaSeconds - relativeCreatedSeconds;
+                        if (additionalSecondsToFirstRoomba <0){
+                            additionalSecondsToFirstRoomba += 7 * SECONDS_IN_DAY;
+                        }
+                        return dateSeconds + additionalSecondsToFirstRoomba;
+                    }
+
                     var nowDay = getNowDay();
                     var time = curRoomba.criteria.time;
                     if(curRoomba.reasons.length > 0) {
@@ -851,28 +884,12 @@
                             //The number of days remaining is based on the age of the question.
                             if(curRoomba.frequency === 'weekly'){
                                 //But, if the Roomba is weekly, then we need to compute the days to the next time the weekly Roomba will run.
-                                //Find the time at which the question would first qualify for being Roomba'ed.
-                                let firstPossibleRoomba = {};
-                                firstPossibleRoomba.seconds = question.creation_date + time.age*24*60*60;
-                                //Convert the date/time in seconds to a day of the week, hour, and minute (ignore seconds).
-                                firstPossibleRoomba.date = new Date(firstPossibleRoomba.seconds * 1000);
-                                firstPossibleRoomba.weekDay = firstPossibleRoomba.date.getUTCDay();
-                                firstPossibleRoomba.hour = firstPossibleRoomba.date.getUTCHours();
-                                firstPossibleRoomba.minute = firstPossibleRoomba.date.getUTCMinutes();
-                                firstPossibleRoomba.monthDay = firstPossibleRoomba.date.getUTCDate();
-                                //The weekly Roomba runs on the Saturday (day of the week 6) at about 00:30 UTC (based on observation).
-                                const weeklyRoombaUTCDay = 6;
-                                const weeklyRoombaUTCHour = 0;
-                                const weeklyRoombaUTCminutes = 30;
-                                //Find the seconds between when the question could first possibly be Roomba'ed and when the Roomba will actually run. 
-                                let relativeWeeklyRoombaSeconds  = (((24*weeklyRoombaUTCDay) + weeklyRoombaUTCHour)*60 + weeklyRoombaUTCminutes )*60;
-                                let relativeCreatedSeconds = (((24*firstPossibleRoomba.weekDay) + firstPossibleRoomba.hour)*60 + firstPossibleRoomba.minute )*60;
-                                let additionalSecondsToFirstRoomba = relativeWeeklyRoombaSeconds - relativeCreatedSeconds;
-                                if (additionalSecondsToFirstRoomba <0){
-                                    additionalSecondsToFirstRoomba += 7 * SECONDS_IN_DAY;
-                                }
+                                //Find the time at which the question could first be/have been Roomba'ed.
+                                const firstPossibleRoomba = getFirstPossibleWeeklyRoombaPastDate(question.creation_date + time.age * SECONDS_IN_DAY);
+                                //The next weekly Roomba will run at
+                                const firstRoombaFromNow = getFirstPossibleWeeklyRoombaPastDate(getNowDay() * SECONDS_IN_DAY);
                                 //The date/time when the Roomba will run as a floating point number of days.
-                                let willRoombaDay = (firstPossibleRoomba.seconds + additionalSecondsToFirstRoomba)/SECONDS_IN_DAY;
+                                let willRoombaDay = Math.max(firstPossibleRoomba, firstRoombaFromNow)/SECONDS_IN_DAY;
                                 curRoomba.remainingDays = Math.max(Math.round(willRoombaDay - getNowDay()), curRoomba.remainingDays);
                             } else {
                                 //This is not currently used, as there aren't any Roomba tasks that are not weekly which depend on the question creation date.
@@ -1408,31 +1425,6 @@
                 adjustDocumentToObject(obj);
                 addDisplayOptionsClickListeners();
             }
-
-            /* No longer used
-            var mouseInFieldRowTimer = null;
-            function mouseLeftRoombaFieldRow(event){
-                //The mouse left the small status row. A timer is started so that the forced hiding
-                //  of the tooltip (used when a click opens the options) can be removed after a short time.
-                //  Overall this is done to make the Options dialog immediately visible, but not have the
-                //  tooltip immediately reappear.
-                if(mouseInFieldRowTimer){
-                    clearTimeout(mouseInFieldRowTimer);
-                    mouseInFieldRowTimer = null;
-                }
-                mouseInFieldRowTimer = setTimeout(setDisplayRoombaToolipText,1000,'');
-            }
-
-            function mouseEnterRoombaFieldRow(event){
-                //When the mouse enters the short status row any timer to remove the forced hiding is cleared.
-                //  This is done to effectively debounce the leave/enter transition which can result in *many*
-                //  events being fired.
-                if(mouseInFieldRowTimer){
-                    clearTimeout(mouseInFieldRowTimer);
-                    mouseInFieldRowTimer = null;
-                }
-            }
-            */
 
             function setDisplayRoombaToolipText(value){
                 //Set the value of the display in the style attribute for all roombaToolTipText elements.
