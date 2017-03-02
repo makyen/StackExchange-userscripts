@@ -12,6 +12,7 @@
 // @include      /^https?:\/\/([^/]*\.)?(stackoverflow|serverfault|superuser|stackexchange|askubuntu|stackapps)\.com/questions/.*$/
 // @include      /^https?:\/\/([^/]*\.)?mathoverflow\.net/questions/.*$/
 // ==/UserScript==
+/* jshint laxbreak:true */
 
 /*This is a fork of "Roombaforcast" by Siguza, which can be obtained from:
  *  https://github.com/Siguza/StackScripts/blob/master/RoombaForecast.user.js
@@ -200,9 +201,11 @@
         if(typeof obj.nextNode === 'function') {
             //e.g. TreeWalkers, NodeIterator
             var currentNode;
+            /* jshint -W084 */
             while(currentNode = nodeIter.nextNode()) {
                 newArr.push(currentNode);
             }
+            /* jshint +W084 */
             return newArr;
         }
         if(typeof Array.from === 'function') {
