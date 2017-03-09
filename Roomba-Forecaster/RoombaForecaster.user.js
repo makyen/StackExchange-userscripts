@@ -2,15 +2,20 @@
 // @name         Roomba Forecaster
 // @author       Makyen
 // @author       Siguza
-// @version      2.0.0beta2.pre1
+// @version      2.0.0beta2pre1
 // @description  Is Roomba going to delete the question? If not, why? If so, when?
 // @namespace    makyen-RoombaForecaster
 // @homepage     https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster
 // @run-at       document-start
 // @grant        GM_getValue
 // @grant        GM_setValue
-// @include      /^https?:\/\/([^/]*\.)?(stackoverflow|serverfault|superuser|stackexchange|askubuntu|stackapps)\.com/questions/.*$/
-// @include      /^https?:\/\/([^/]*\.)?mathoverflow\.net/questions/.*$/
+// @include      /^https?:\/\/([^/]*\.)?stackoverflow.com/questions/\d.*$/
+// @include      /^https?:\/\/([^/]*\.)?serverfault.com/questions/\d.*$/
+// @include      /^https?:\/\/([^/]*\.)?superuser.com/questions/\d.*$/
+// @include      /^https?:\/\/([^/]*\.)?stackexchange.com/questions/\d.*$/
+// @include      /^https?:\/\/([^/]*\.)?askubuntu.com/questions/\d.*$/
+// @include      /^https?:\/\/([^/]*\.)?stackapps.com/questions/\d.*$/
+// @include      /^https?:\/\/([^/]*\.)?mathoverflow\.net/questions/\d.*$/
 // ==/UserScript==
 /* jshint laxbreak:true */
 
@@ -35,11 +40,11 @@
 
 /* Set config.scrapePage to false to use the API instead of scraping the
  * page.  Scraping is faster than the API.  Using it does not consume
- * any of the API request quota, which may be of value to power users. 
+ * any of the API request quota, which may be of value to power users.
  * Testing indicated that there are 300 permitted calls per IP from
  * all sources without an API key.  Scraping was implemented prior to
  * determining that this would be a separate project rather than
- * pulled back into Roombaforcast, which does not have an API key. 
+ * pulled back into Roombaforcast, which does not have an API key.
  * Thus, at the time the scraping capability was written, no API key
  * existed for this script which limited it to a max of 300 requests/IP/day.
  * This can now be set through the options UI by opening it using Shift, Ctrl,
@@ -70,20 +75,20 @@
      *   http://stackoverflow.com/a/9851769/3773011
      */
     //Opera 8.0+ (tested on Opera 42.0)
-    var isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+    const isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
     //Firefox 1.0+ (tested on Firefox 45 - 53)
-    var isFirefox = typeof InstallTrigger !== 'undefined';
+    const isFirefox = typeof InstallTrigger !== 'undefined';
     //Internet Explorer 6-11
     //   Untested on IE (of course). Here because it shows some logic for isEdge.
-    var isIE = /*@cc_on!@*/false || !!document.documentMode;
+    const isIE = /*@cc_on!@*/false || !!document.documentMode;
     //Edge 20+ (tested on Edge 38.14393.0.0)
-    var isEdge = !isIE && !!window.StyleMedia;
+    const isEdge = !isIE && !!window.StyleMedia;
     //The other browsers are trying to be more like Chrome, so picking
     //  capabilities which are in Chrome, but not in others, is a moving
     //  target.  Just default to Chrome if none of the others is detected.
-    var isChrome = !isOpera && !isFirefox && !isIE && !isEdge;
+    const isChrome = !isOpera && !isFirefox && !isIE && !isEdge;
     // Blink engine detection (tested on Chrome 55.0.2883.87 and Opera 42.0)
-    var isBlink = (isChrome || isOpera) && !!window.CSS;
+    const isBlink = (isChrome || isOpera) && !!window.CSS;
 
     if(document.readyState === 'loading') {
         window.addEventListener('DOMContentLoaded',setup);
@@ -102,6 +107,16 @@
             if(target.nodeName === 'A' && (target.classList.contains('vote-up-off') || target.classList.contains('vote-down-off'))){
                 delayUpdateRoomba();
             }
+        }
+        if(!document.getElementById('qinfo')){
+            //Exit. Don't setup the Roomba Forecaster. The page does not have the question info
+            //  table into which a line is to be placed. Generally, the issue of executing on a
+            //  page where the table does not exist should be solved by changing the @includes
+            //  so the page does not qualify. But, this will catch any that were erroneously
+            //  included. In addition, this should handle an issue on Edge where the script is
+            //  executed a second time, in a new scope, on the same page, but in an environment
+            //  where the DOM is corrupted.
+            return;
         }
 
         detectAndRemoveRoombaForecastChanges();
@@ -162,7 +177,7 @@
         //Prevent there from being two "roomba" lines if both this script and
         // RoombaForcast are installed.
         var table = document.getElementById('qinfo');
-        //loop through the not this script table cells looking for 'roomba'
+        //loop through the table cells not added by this script looking for 'roomba'
         if(!asArray(table.querySelectorAll('td:not(#roombaFieldRowLabel)')).some(function(cell){
             if(cell.textContent === 'roomba'){
                 //found a roomba row
@@ -227,36 +242,34 @@
 
         //Define the Roombas
         var roombas = [];
-        function RoombaQualifier(_properties,_criteria,_overrides) { //RoobaQualifier class
+        function RoombaQualifier(_properties) { //RoobaQualifier class
             this.reasons=[];
             this.shortReasons=[];
             this.remainingDays= 9999; //Just a large number > 999.
             this.html= '';
             this.shortHtml= '';
-            this.criteria = _criteria;
-            if(_overrides){
-                this.overrides = _overrides;
-            }
             Object.assign(this,_properties);
         }
+
         roombas.push(new RoombaQualifier({
             //Closed, 9 days   (Daily)                           [RemoveAbandonedClosed]
             headerText: 'Closed&nbsp;>9&nbsp;Days',
             headerTextShort: 'Closed&nbsp;>9&nbsp;D',
             shortReasonPrefix: 'Cl',
-            frequency: 'daily'
-        },{//Criteria
-            maxScore: 0,
-            isLocked: false,
-            maxAnswerScore: 0,
-            isClosed: true,
-            isDulplicate: false,
-            hasAcceptedAnswer: false,
-            hasReopenVotes: false,
-            time: {
-                daysDelayFromEdit: 9,
-                daysDelayFromClose: 9,
-                daysOffsetFromReportedCloseToClose: 12 //Basically, a fudge factor based on observed behavior of hold to delete date.
+            frequency: 'daily',
+            criteria: {
+                maxScore: 0,
+                isLocked: false,
+                maxAnswerScore: 0,
+                isClosed: true,
+                isDuplicate: false,
+                hasAcceptedAnswer: false,
+                hasReopenVotes: false,
+                time: {
+                    daysDelayFromEdit: 9,
+                    daysDelayFromClose: 9,
+                    daysOffsetFromReportedCloseToClose: 12 //Basically, a fudge factor based on observed behavior of hold to delete date.
+                }
             }
         }));
         roombas.push(new RoombaQualifier({
@@ -264,33 +277,36 @@
             headerText: '>&nbsp;30&nbsp;Days',
             headerTextShort: '>&nbsp;30&nbsp;Days',
             shortReasonPrefix: '30',
-            frequency: 'weekly'
-        },{//Criteria
-            isLocked: false,
-            maxScore: -1,
-            maxAnswers: 0,
-            time: {
-                age: 30
+            frequency: 'weekly',
+            criteria: {
+                isLocked: false,
+                maxScore: -1,
+                maxAnswers: 0,
+                time: {
+                    age: 30
+                }
+            },
+            overrides: {
+                closedAndMigratedAway: true, //                      [RemoveMigrationStubs]
+                migratedHereAndRejected: true //                     [RemoveRejectedMigrations]
             }
-        },{//overrides
-            closedAndMigratedAway: true, //                      [RemoveMigrationStubs]
-            migratedHereAndRejected: true //                     [RemoveRejectedMigrations]
         }));
         roombas.push(new RoombaQualifier({
             // > 365 days old  (Weekly)                          [RemoveAbandonedQuestions]
             headerText: '>&nbsp;365&nbsp;Days',
             headerTextShort: '>&nbsp;365&nbsp;Days',
             shortReasonPrefix: '365',
-            frequency: 'weekly'
-        },{//Criteria
-            isLocked: false,
-            maxScore: 0,  //While stated as === not <=, < is coverd by 30 day
-            maxScoreOwnerDeleted: 1,  //Qs from deleted users don't get deleted is score === 0.
-            maxAnswers: 0,
-            ageToViewMultiplier: 1.5,
-            maxComments: 1,
-            time: {
-                age: 365
+            frequency: 'weekly',
+            criteria: {
+                isLocked: false,
+                maxScore: 0,  //While stated as === not <=, < is coverd by 30 day
+                maxScoreOwnerDeleted: 1,  //Qs from deleted users don't get deleted if score === 0.
+                maxAnswers: 0,
+                ageToViewMultiplier: 1.5,
+                maxComments: 1,
+                time: {
+                    age: 365
+                }
             }
         }));
 
@@ -840,6 +856,22 @@
                 function makeRoombaHtml(curRoomba){
                     //Create the HTML that will be used for the roomba entry. This will either be the HTML of
                     //  the lists of reasons (long and short), or the number of days remaining until deletion.
+                    function logInvalidTimeCriteria(curRoomba){
+                        //Log if the time criteria is not understood.
+                        const time = curRoomba.criteria.time;
+                        const validCriteriaTime = ['daysDelayFromEdit','daysDelayFromClose','daysOffsetFromReportedCloseToClose','age'];
+                        Object.keys(time).forEach(function(timeCriteria){
+                            if(validCriteriaTime.indexOf(timeCriteria) === -1){
+                                console.log('The time criteria:',timeCriteria,' is not one which this code knows how to check. Roomba:', curRoomba);
+                            } else {
+                                //All criteria must be numbers
+                                if(typeof time[timeCriteria] !== 'number') {
+                                    console.log('The time criteria:',timeCriteria,' is not a number:', time[timeCriteria], ' Roomba:', curRoomba);
+                                }
+                            }
+                        });
+                    }
+
                     function getFirstPossibleWeeklyRoombaPastDate(dateSeconds){
                         //Compute the first time a weekly Roomba will run after the time specified in seconds.
                         function getSecondsFromWeekStart(day,hour,minute,second){
@@ -863,7 +895,7 @@
                         firstPossibleRoomba.minute = firstPossibleRoomba.date.getUTCMinutes();
                         firstPossibleRoomba.second = firstPossibleRoomba.date.getUTCSeconds();
                         firstPossibleRoomba.monthDay = firstPossibleRoomba.date.getUTCDate();
-                        //Find the seconds between the date provided and when the first weekly Roomba will run. 
+                        //Find the seconds between the date provided and when the first weekly Roomba will run.
                         let relativeWeeklyRoombaSeconds  = getSecondsFromWeekStart(weeklyRoombaUTCDay, weeklyRoombaUTCHour, weeklyRoombaUTCminutes);
                         let relativeCreatedSeconds = getSecondsFromWeekStart(firstPossibleRoomba.weekDay, firstPossibleRoomba.hour, firstPossibleRoomba.minute, firstPossibleRoomba.second);
                         let additionalSecondsToFirstRoomba = relativeWeeklyRoombaSeconds - relativeCreatedSeconds;
@@ -875,6 +907,9 @@
 
                     var nowDay = getNowDay();
                     var time = curRoomba.criteria.time;
+                    //Validate time criteria
+                    logInvalidTimeCriteria(curRoomba);
+
                     if(curRoomba.reasons.length > 0) {
                         //The question is not qualified. Create the HTML of reasons.
                         curRoomba.html = getListHtml(curRoomba.reasons);
@@ -959,10 +994,43 @@
                         return false;
                     }
 
+                    function logInvalidCriteria(curRoomba){
+                        //Validate the criteria.
+                        const criteria = curRoomba.criteria;
+                        const validCriteria = {
+                            isLocked: 'boolean',
+                            maxAnswers: 'number',
+                            maxScore: 'number',
+                            maxScoreOwnerDeleted: 'number',
+                            isClosed: 'boolean',
+                            isDuplicate: 'boolean',
+                            maxAnswerScore: 'number',
+                            hasAcceptedAnswer: 'boolean',
+                            hasReopenVotes: 'boolean',
+                            ageToViewMultiplier: 'number',
+                            maxComments: 'number',
+                            time: 'object'
+                        };
+                        Object.keys(criteria).forEach(function(checkCriteria){
+                            if(!validCriteria.hasOwnProperty(checkCriteria)){
+                                console.log('Invalid criteria: Unknown property:',checkCriteria, ' Roomba:', curRoomba);
+                            } else {
+                                //All criteria must be numbers
+                                if(typeof criteria[checkCriteria] !== validCriteria[checkCriteria]) {
+                                    console.log('Invalid criteria: The criteria:', checkCriteria,' is not a ' + validCriteria[checkCriteria] + ' value found:', criteria[checkCriteria], ' Roomba:', curRoomba);
+                                }
+                            }
+                        });
+                    }
+
                     var criteria = curRoomba.criteria;
                     //Track if question or answer downvotes could qualify the question for this roomba.
                     var downvoteQuestionCouldQualify = false;
                     var downvoteAnswerCouldQualify = false;
+
+                    //Validate input
+                    logInvalidCriteria(curRoomba);
+
                     //Not Locked
                     addReasonsBooleanCriteria('isLocked','locked_date' in question,'locked','L');
 
@@ -1092,7 +1160,7 @@
                     if(document.querySelector('#question a.vote-down-off.vote-down-on')){
                         let downQualsSpan = document.getElementById('roombaDownVoteQualifies');
                         downQualsSpan.textContent = downQualsSpan.textContent.replace(/question &?/,'');
-                        if(downQualsSpan.textContent === 'downvote will roomba'){
+                        if(downQualsSpan.textContent === 'down-vote will roomba'){
                             downQualsSpan.textContent = '';
                         }
                     }
@@ -1131,8 +1199,8 @@
 
                         }
                         if(downvoteQualifies & DOWNVOTE_QUALIFIES_ANSWER){
-                            //Downvoting the highest voted question will qualify.
-                            //XXX Should detect that if it has/they have already been downvoted by the user.
+                            //Downvoting the highest voted anser will qualify.
+                            //XXX Should detect that if that answer has already been downvoted by the user.
                             if(downvoteText !== ''){
                                 downvoteText += ' & ';
                             }
@@ -1143,7 +1211,7 @@
                         }
                         //XXX Should add notification that a downvote will roomba sooner. This is the case when
                         //  qualified for 365 day roomba (0 score), but not qualified for 30 day roomba (-1 score).
-                        downvoteText = 'downvote ' + downvoteText + ' will roomba';
+                        downvoteText = 'down-vote ' + downvoteText + ' will roomba';
                     }
                     if(shortReasons && downvoteText){
                         shortReasons += ' ';
@@ -1216,24 +1284,26 @@
                 hideOptions();
             }
 
+            function getEffectiveStyleValue(element,styleText,rejectRegex,defaultValue){
+                var foundStyleValue;
+                do {
+                    foundStyleValue = window.getComputedStyle(element).getPropertyValue(styleText);
+                    element = element.parentNode;
+                    rejectRegex.lastIndex = 0;
+                } while(element && rejectRegex.test(foundStyleValue));
+                rejectRegex.lastIndex = 0;
+                if(rejectRegex.test(foundStyleValue)){
+                    //If no valid style was found, use the default provided.
+                    foundStyleValue = defaultValue;
+                }
+                return foundStyleValue;
+            }
+
             function setOptionDialogBackgroundColor(){
-                //Set the Options dialog background color to the current computed color. This is done
-                //  to support alternate color schemes.
-                //Other SE sites have a transparent color for the content and all the way to the top.
-                let contentEl = document.getElementById('content');
-                let contentStyles = window.getComputedStyle(document.getElementById('content'));
-                let copiedColor = contentStyles.getPropertyValue("background-color");
-                while(contentEl && /(?:transparent|initial|inherit)/.test(copiedColor)){
-                    contentEl = contentEl.parentNode;
-                    contentStyles = window.getComputedStyle(document.getElementById('content'));
-                    copiedColor = contentStyles.getPropertyValue("background-color");
-                }
-                if(/(?:transparent|initial|inherit)/.test(copiedColor)){
-                    //If no background-color was found, assume it is white.
-                    copiedColor = 'white';
-                }
-                let optionsDiv = document.getElementById('roombaOptionsAbsoluteDiv');
-                optionsDiv.style.backgroundColor = copiedColor;
+                //Set the Options dialog background color to the current computed color.
+                //  This is done to support alternate color schemes. This is needed because the
+                //  inherited color is usually 'transparent', which does not work for an overlay.
+                document.getElementById('roombaOptionsAbsoluteDiv').style.backgroundColor = getEffectiveStyleValue(document.getElementById('content'),'background-color',/(?:transparent|initial|inherit|currentColor|unset)/i,'white');
             }
 
             function addDisplayOptionsClickListeners(){
