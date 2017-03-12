@@ -2,7 +2,7 @@
 // @name         Roomba Forecaster
 // @author       Makyen
 // @author       Siguza
-// @version      2.0.0beta2
+// @version      2.0.0beta3.pre1
 // @description  Is Roomba going to delete the question? If not, why? If so, when?
 // @namespace    makyen-RoombaForecaster
 // @homepage     https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster
@@ -1303,7 +1303,9 @@
                 //Set the Options dialog background color to the current computed color.
                 //  This is done to support alternate color schemes. This is needed because the
                 //  inherited color is usually 'transparent', which does not work for an overlay.
-                document.getElementById('roombaOptionsAbsoluteDiv').style.backgroundColor = getEffectiveStyleValue(document.getElementById('content'),'background-color',/(?:transparent|initial|inherit|currentColor|unset)/i,'white');
+                //  Should really do a numeric check on rgba() alpha values, but a RegExp appears
+                //  sufficient for the pragmatically generated values.
+                document.getElementById('roombaOptionsAbsoluteDiv').style.backgroundColor = getEffectiveStyleValue(document.getElementById('content'),'background-color',/(?:transparent|initial|inherit|currentColor|unset|rgba.*,\s*0+(?:\.\d*)?\s*\))/i,'white');
             }
 
             function addDisplayOptionsClickListeners(){
