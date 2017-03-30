@@ -2,7 +2,7 @@
 // @name         Roomba Forecaster
 // @author       Makyen
 // @author       Siguza
-// @version      2.0.0beta3
+// @version      2.0.0beta3.1
 // @description  Is Roomba going to delete the question? If not, why? If so, when?
 // @namespace    makyen-RoombaForecaster
 // @homepage     https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster
@@ -287,8 +287,8 @@
                 }
             },
             overrides: {
-                closedAndMigratedAway: true, //                      [RemoveMigrationStubs]
-                migratedHereAndRejected: true //                     [RemoveRejectedMigrations]
+                closedAndMigratedAway: true, //                  [RemoveMigrationStubs]
+                migratedHereAndRejected: true //                 [RemoveRejectedMigrations]
             }
         }));
         roombas.push(new RoombaQualifier({
@@ -839,13 +839,19 @@
                         return;
                     }//else
                     var override = false;
-                    //It is assumed that a rejected migration from another site means the question is closed here.
-                    //  I did not find any question on which to test this.
-                    if(overrides.closedAndMigratedAway && 'closed_date' in question && 'migrated_to' in question){
-                        override = true;
-                    }
-                    if(overrides.migratedHereAndRejected && 'closed_date' in question && 'migrated_from' in question){
-                        override = true;
+                    if((getNowDay() - question.closedDay) < 16){
+                        //This question: http://softwareengineering.stackexchange.com/q/122569/151503 meets all of the stated criteria, but has not
+                        //  been deleted in many years. Thus, there are some unstated criteria. The unstated criteria which allow a question to remain
+                        //  undeleted are handled by checking if there has been enough time for the weekly Roomba to have deleted the question, twice.
+                        //  If that is the case, then it is assumed that the Roomba will never delete it.
+                        //A rejected migration from another site means the question is closed here (https://meta.stackexchange.com/a/10250/271271).
+                        //  This has only been minimally tested.
+                        if(overrides.closedAndMigratedAway && 'closed_date' in question && 'migrated_to' in question){
+                            override = true;
+                        }
+                        if(overrides.migratedHereAndRejected && 'closed_date' in question && 'migrated_from' in question && question.closed_reason !== 'duplicate'){
+                            override = true;
+                        }
                     }
                     if(override){
                         curRoomba.reasons = [];
