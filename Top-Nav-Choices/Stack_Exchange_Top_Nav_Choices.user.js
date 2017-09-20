@@ -94,6 +94,8 @@
         this.max = _max;
         this.style = _style;
         this.textPre = _textPre;
+        
+        
         this.textPost = _textPost;
         this.tooltip = _tooltip;
     }
@@ -213,8 +215,6 @@
             '    height: ' + (height - 15) + 'px;\n' +
             '    min-height: 24px;\n' +
             '    max-height: 28px;\n' +
-            '    box-shadow: none;\n' +
-            '    padding: 0 18px;\n' +
             '}\n' +
             topNavQualifier + '.top-bar .searchbar .js-search-submit svg {\n' +
             '    position: absolute;\n' +
