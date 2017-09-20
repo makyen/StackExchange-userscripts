@@ -60,3 +60,4 @@ foo
 *checkpoint
 test/
 build/
+*.lnk
