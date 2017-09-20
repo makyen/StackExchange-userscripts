@@ -211,7 +211,6 @@
             topNavQualifier + '.top-bar .searchbar input.f-input[type="text"] ,\n' +
             topNavQualifier + '.top-bar .searchbar .btn-topbar-primary ,\n' +
             topNavQualifier + '.top-bar .searchbar .btn {\n' +
-            '    min-height: auto;\n' +
             '    height: ' + (height - 15) + 'px;\n' +
             '    min-height: 24px;\n' +
             '    max-height: 28px;\n' +
