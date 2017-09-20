@@ -2,11 +2,11 @@
 
 *Top Nav Choices* changes the new Stack Exchange/Stack Overflow top navigation based on the preferences you set. The preferences are accessed on your normal Stack Exchange preferences page<sup>1</sup>.
 
-Default top navigation on Stack Overflow:  
-[![Default top navigation on Stack Overflow][1]][1]
+Default changed top navigation on Stack Overflow with dark theme, and inbox and achievements on the left and the help button added (all changes are options)  
+[![Default changed top navigation on Stack Overflow][1]][1]
 
 Stack Overflow with stock light theme and different drop-down button placement:  
-[![SO light theme different drop-down placement][2]][2]
+[![Stack Overflow light theme different drop-down placement][2]][2]
 
 Default top navigation on Meta Stack Exchange:  
 [![Default top navigation Meta Stack Exchange][5]][5]
@@ -36,12 +36,17 @@ Default top navigation on Meta Stack Exchange:
 ## Preferences example
 [![Preferences example][4]][4]
 
+## Additional features / bugs
+Please, feel free to [open an issue](https://github.com/makyen/StackExchange-userscripts/issues/new) if you desire an additional feature. You should, of course, also do so if you encounter a bug.
+
+## Moderator tools
+The "other" category should pick up the moderator tools. I'm not a moderator on any Stack Exchange site, so I'm unable to test it. I'm happy to update the script to have a explicit moderator tools drop-down button location selection. However, to do so I need either access to the top-nav HTML, or, at a minimum, the js-button `class` which is applied to the button (which should look like `js-[something]-button`) and the class applied to the drop-down (which should look something like `[same something]-dialog`). If they have that format, then I need to know the "something". If they don't have that format, I'm going to need the details. I also need to know if it's more than one drop-down button (appears to be so from screenshots). If the moderator tools are more than one drop down, I'm going to need the "something" for both.
 
 ## Compatibility notes
 *Top Nav Choices* has been tested on Chrome (Tampermonkey) and Firefox (Greasemonkey). It should be compatible with other browsers and user script managers.
 
 -------
- <sup>1. The URL for your preferences page is `https://[Stack Exchange site]/users/preferences/[your user #]`). You can get there by going to your profile page and selecting: <kbd>Edit Profile & Settings</kbd> (tab) ➞ <kbd>Preferences</kbd> (sidebar under "SITE SETTINGS").</sup> The added preferences will show up on all stack exchange sites (except Area 51, which doesn't have preferences).
+ <sup>1. The URL for your preferences page is `https://[Stack Exchange site]/users/preferences/[your user #]`). You can get there by going to your profile page and selecting: <kbd>Edit Profile & Settings</kbd> (tab) ➞ <kbd>Preferences</kbd> (sidebar under "SITE SETTINGS"). The added preferences will show up on all stack exchange sites (except Area 51, which doesn't have preferences).</sup>
 
 
 
