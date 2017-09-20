@@ -14,7 +14,7 @@
 // @exclude      *://chat.*.stackexchange.com/*
 // @exclude      *://api.*.stackexchange.com/*
 // @exclude      *://data.stackexchange.com/*
-// @version      1.0.0
+// @version      1.0.1
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_deleteValue
@@ -569,6 +569,9 @@
                 helpButton.parentNode.remove();
                 return;
             }
+            return;
+        } // else
+        if (!configOptions.checkboxes.addHelp) {
             return;
         } // else
         //Create the help button
