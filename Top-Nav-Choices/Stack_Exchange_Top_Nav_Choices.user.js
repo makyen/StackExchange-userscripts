@@ -14,7 +14,7 @@
 // @exclude      *://chat.*.stackexchange.com/*
 // @exclude      *://api.*.stackexchange.com/*
 // @exclude      *://data.stackexchange.com/*
-// @version      1.0.1
+// @version      1.0.2
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_deleteValue
@@ -94,6 +94,8 @@
         this.max = _max;
         this.style = _style;
         this.textPre = _textPre;
+        
+        
         this.textPost = _textPost;
         this.tooltip = _tooltip;
     }
@@ -187,7 +189,7 @@
             '    margin-left: 10px;\n' +
             '}\n' +
             topNavQualifier + '.top-bar .-logo{\n' +
-            '    height: ' + height + 'px;\n' +
+            '    height: ' + (height - 5) + 'px;\n' +
             '}\n' +
             topNavQualifier + '.top-bar .navigation .-list {\n' +
             '    height: auto;\n' +
@@ -197,22 +199,27 @@
             '    line-height: ' + (height - (2 + ((configOptions.checkboxes.showOrangeTopSO && isSO) ? 3 : 0))) + 'px;\n' +
             '}\n' +
             topNavQualifier + '.top-bar .searchbar input.f-input[type="text"] {\n' +
-            '    height: auto;\n' +
             '    padding-top: 2px;\n' +
             '    padding-bottom: 2px;\n' +
             '}\n' +
             topNavQualifier + '.top-bar .searchbar .btn-topbar-primary ,\n' +
             topNavQualifier + '.top-bar .searchbar .btn {\n' +
             '    min-height: auto;\n' +
-            //This will probably take some adjustment for other heights.
-            //  It works for various top-nav heights (24px value).
-            //  Doesn't appear to need to change by height.
-            '    height: ' + (24) + 'px;\n' +
+            '    box-shadow: none;\n' +
+            '    padding: 0 18px;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .searchbar input.f-input[type="text"] ,\n' +
+            topNavQualifier + '.top-bar .searchbar .btn-topbar-primary ,\n' +
+            topNavQualifier + '.top-bar .searchbar .btn {\n' +
+            '    height: ' + (height - 15) + 'px;\n' +
+            '    min-height: 24px;\n' +
+            '    max-height: 28px;\n' +
             '}\n' +
             topNavQualifier + '.top-bar .searchbar .js-search-submit svg {\n' +
             '    position: absolute;\n' +
-            '    top: 3px;\n' +
-            '    right: 7px;\n' +
+            '    top: ' + ((height - 15) <= 25  ? 3 : ((height - 15) >= 27 ? 5 : 4)) + 'px;\n' +
+            '    right: 9px;\n' +
+            '    height: 16px;\n' +
             '}\n' +
             topNavQualifier + '.top-bar .secondary-nav .-list {\n' +
             '    height: auto;\n' +
@@ -225,7 +232,7 @@
             '    top: 0px !important;\n' +
             '}\n' +
             topNavQualifier + '.top-bar .my-profile {\n' +
-            '    height: ' + height + 'px;\n' +
+            '    height: ' + (height - 5) + 'px;\n' +
             '}\n' +
             topNavQualifier + '.topbar-dialog,\n' +
             topNavQualifier + '.topbar-dialog.inbox-dialog,\n' +
