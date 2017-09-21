@@ -14,14 +14,14 @@
 // @exclude      *://chat.*.stackexchange.com/*
 // @exclude      *://api.*.stackexchange.com/*
 // @exclude      *://data.stackexchange.com/*
-// @version      1.0.1
+// @version      1.0.1.1
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_deleteValue
 // @grant        GM_addValueChangeListener
 // @run-at       document-start
 // ==/UserScript==
-/* globals GM_getValue, GM_setValue, GM_addValueChangeListener */
+/* globals GM_getValue, GM_setValue, GM_addValueChangeListener, GM_info */
 
 (function() {
     'use strict';
@@ -32,12 +32,16 @@
     var isMetaSO = window.location.hostname === 'meta.stackoverflow.com';
     var secondaryNavAfterLogo;
     var secondaryNavBeforeSearch;
+    var secondaryNavAfterSearch;
     var originalNav;
+    var usingDefaults = false;
     var header;
     var listItems = {
-        unknown: []
+        unknownMain: [],
+        unknownSecondary: [],
+        unknown: [],
     };
-    var moveOrder = ['inbox', 'achievements', 'review', 'help', 'hamburger'];
+    var moveOrder = ['inbox', 'achievements', 'review', 'help', 'hamburger', 'mod-inbox', 'modTools'];
     var originalJobsText;
     var originalHelpButtonState;
     if (document.readyState === 'loading') {
@@ -50,6 +54,7 @@
     var currentUserHref;
     var currentUserId;
     var canListenGMStorage = typeof GM_addValueChangeListener === 'function'; //Not available: Greasemonkey
+    var topNavHeight;
 
 
     //Options
@@ -60,13 +65,21 @@
         this.tooltip = _tooltip;
     }
 
-    function LocationOption(_defaultValue, _text, _tooltip) {
+    function LocationOption(_defaultValue, _dividerDefault, _text, _tooltip) {
         //Constructor for a Location option
         RadioOption.call(this, _defaultValue, [
-            new CheckboxOption( 1, 'left',   'Place this item on the left.'),
-            new CheckboxOption( 5, 'center', 'Place this item in the center.'),
-            new CheckboxOption(10, 'right',  'Place this item on the right.'),
+            new CheckboxOption(  1, 'left',            'Place this item on the left.'),
+            new CheckboxOption(  5, 'center',          'Place this item in the center.'),
+            new CheckboxOption(  7, 'search →',        'Place this item to the right of the search entry.'),
+            new CheckboxOption( 10, 'right',           'Place this item on the right.'),
+            new CheckboxOption(100, 'don\'t move',     'Don\'t move this item. For this to accurately take effect, you must reload the page.'),
         ], _text, _tooltip);
+        this.divider = new CheckboxOption(_dividerDefault, 'show divider', 'Show a divider to the left of this item. The divider is very thin. It can be difficult to see. However, that\'s the stock look for the divider. It\'s generally used with the moderator tools.');
+        this.defaultValue = {
+            where: this.defaultValue,
+            divider: this.divider.defaultValue,
+        };
+        //delete this.divider.defaultValue;
     }
 
     function RadioOption(_defaultValue, _radios, _text, _tooltip) {
@@ -102,6 +115,7 @@
     var heightAdjustmentTooltipExtraText = '\r\nCurrently, the center items are just separated using &quot;margin-left&quot;/&quot;margin-right&quot;.\r\nThis is how many pixels are between the centered items and the search box. Large values will make the search box smaller.\r\nThe default values of 50, 50 (SO/MSO) and 185, 50 (others) will result in a single centered item being in close to the same centered location on SO/MSO and MSE.\r\nWhen more sites start using the new top-nav how this is adjusted may be revisited in order to let you have a centered item in about the same place across sites.';
     var tooltipAppliesToSO    = 'This value applies on Stack Overflow and Meta Stack Overflow.';
     var tooltipAppliesToOther = 'This value applies on sites that are not Stack Overflow or Meta Stack Overflow.';
+    var otherCatchAll = ' This is a catch-all in case there is something added to the top bar. If this script is up to date, there shouldn\'t be anything in this category. If there is, please open an issue on GitHub, or otherwise contact Makyen.';
     //Object describing the options displayed in the GUI.
     var knownOptions = {
         checkboxes: {
@@ -115,12 +129,16 @@
             applyTopNavHeightToNonSO:        new CheckboxOption(true,  'Apply the selected height to sites other than Stack Overflow/Meta Stack Overflow.', 'The stock top navigation is a different height on sites other (40px) than SO/MSO (60px). Selecting this will apply the height you have selected to all sites with the new top navigation. If you don\'t select this checkbox, then the height you select here will apply to only Stack Overflow and it\'s meta.'),
         },
         locations: {
-            inbox:         new LocationOption( 1, 'Inbox', ''),
-            achievements:  new LocationOption( 1, 'Achievements', ''),
-            review:        new LocationOption(10, 'Reviews', ''),
-            help:          new LocationOption(10, 'Help', ''),
-            hamburger:     new LocationOption(10, 'Site Switcher', 'Not used if the site switcher is consolidated with the site logo.'),
-            unknown:       new LocationOption( 5, 'Other (moderator tools?)', 'This will probably be moderator tools. May not properly adjust any drop-down menu.'),
+            inbox:             new LocationOption(  1, false, 'Inbox', ''),
+            achievements:      new LocationOption(  1, false, 'Achievements', ''),
+            review:            new LocationOption( 10, false, 'Reviews', ''),
+            help:              new LocationOption( 10, false, 'Help', ''),
+            hamburger:         new LocationOption( 10, false, 'Site Switcher', 'Not used if the site switcher is consolidated with the site logo.'),
+            'mod-inbox':       new LocationOption(  5, false, 'Moderator Inbox', ''),
+            modTools:          new LocationOption(  5, false, 'Moderator Tools/flags', ''),
+            unknownMain:       new LocationOption(100, false, 'Other: Main', 'Unknown things added to the &qout;main&quot; navigation (where SO has &quot;Questions&quot;).' + otherCatchAll),
+            unknownSecondary:  new LocationOption(100, false, 'Other: Navigation', 'Unknown things added to the &qout;secondary&quot; navigation (where SE has the inbox/achievements/).' + otherCatchAll),
+            unknown:           new LocationOption(100, false, 'Other', 'Anything else found as a list-item which was unexpected.' + otherCatchAll),
         },
         /*
         buttons: {
@@ -128,11 +146,11 @@
         },
         */
         numbers: {
-            centerMarginLeftSO:     new NumberOption( 50, 0, 500, 'width: 5em;height:2em;', 'Stack Overflow: Left margin ',  ' (px) center drop down ', tooltipAppliesToSO + heightAdjustmentTooltipExtraText),
-            centerMarginRightSO:    new NumberOption( 50, 0, 500, 'width: 5em;height:2em;', '', ' (px) Right margin', tooltipAppliesToSO + heightAdjustmentTooltipExtraText),
-            centerMarginLeftNonSO:  new NumberOption(185, 0, 500, 'width: 5em;height:2em;', 'Non-SO: Left margin ',  ' (px) center drop down ', tooltipAppliesToOther + heightAdjustmentTooltipExtraText),
-            centerMarginRightNonSO: new NumberOption( 50, 0, 500, 'width: 5em;height:2em;', '', ' (px) Right margin', tooltipAppliesToOther + heightAdjustmentTooltipExtraText),
-            topNavHeight:           new NumberOption( 34, 0, 500, 'width: 5em;height:2em;', 'Top-Nav height ', ' px', 'The original top-nav on most sites is/was 34px high. The new top-nav on SO/MSO is 60px. The new top-nav on MSE is 40px. It\'s assumed that other sites will be 40px high when they get the new top-nav. This allows you to set it to what you desire. There is a checkbox that allows you to apply this selection only to SO/MSO or to all sites with the new top-nav.'),
+            centerMarginLeftSO:     new NumberOption( 50, 0, 999, 'width: 5em;height:2em;', 'Stack Overflow: Left margin ',  ' (px) center drop down ',   tooltipAppliesToSO + heightAdjustmentTooltipExtraText),
+            centerMarginRightSO:    new NumberOption( 50, 0, 999, 'width: 5em;height:2em;', '',                              ' (px) Right margin',        tooltipAppliesToSO + heightAdjustmentTooltipExtraText),
+            centerMarginLeftNonSO:  new NumberOption(185, 0, 999, 'width: 5em;height:2em;', 'Non-SO: Left margin ',          ' (px) center drop down ',   tooltipAppliesToOther + heightAdjustmentTooltipExtraText),
+            centerMarginRightNonSO: new NumberOption( 50, 0, 999, 'width: 5em;height:2em;', '',                              ' (px) Right margin',        tooltipAppliesToOther + heightAdjustmentTooltipExtraText),
+            topNavHeight:           new NumberOption( 34, 0, 999, 'width: 5em;height:2em;', 'Top-Nav height ',               ' px',                       'The original top-nav on most sites is/was 34px high. The new top-nav on SO/MSO is 60px. The new top-nav on MSE is 40px. It\'s assumed that other sites will be 40px high when they get the new top-nav. This allows you to set it to what you desire. There is a checkbox that allows you to apply this selection only to SO/MSO or to all sites with the new top-nav.'),
         },
     };
     /* beautify preserve:end */
@@ -140,7 +158,70 @@
     //Testing: clear options:
     //GM_deleteValue('configOptions');
     var configOptions = getConfigOptions();
-    var topNavHeight;
+
+    function getNumberForVersion(version) {
+        if (typeof version !== 'string') {
+            return 0;
+        }
+        return version.split('.').reduce(function(sum, value, index) {
+            value = +value;
+            // We consider 2 dot version numbers "normal" > 2 dots gets fraction.
+            return sum * (index < 2 ? 1000 : 1) + value * Math.pow(1000, (index < 2 ? 1 : (2 - index)));
+        }, 0);
+    }
+    var scriptVersion = GM_info.script.version;
+    var scriptVersionNumber = getNumberForVersion(scriptVersion);
+    var lastVersion = GM_getValue('installedVersion');
+    var lastVersionNumber = getNumberForVersion(lastVersion);
+    if (scriptVersionNumber > lastVersionNumber) {
+        //New version of the script or new install.
+        if (usingDefaults) {
+            //New install, or cleared stored config
+            console.log('New install of version', scriptVersion);
+        } else {
+            //Version upgrade
+            console.log('Upgrade version to', scriptVersion, 'from', lastVersion);
+            if (typeof lastVersion === 'undefined') {
+                //The first upgrade
+                let origUnknownWhere = configOptions.locations.unknown;
+                let locationKeys = Object.keys(configOptions.locations);
+                let countInUnknownWhere = locationKeys.reduce(function(sum, key) {
+                    if (configOptions.locations[key] === origUnknownWhere) {
+                        sum++;
+                    }
+                    return sum;
+                }, 0);
+                Object.keys(configOptions.locations).forEach(function(location) {
+                    var value = configOptions.locations[location];
+                    var newValue = {};
+                    if (location === 'mod-inbox') {
+                        configOptions.locations[location].where = origUnknownWhere;
+                        //Attempt to maintain what the user probably expects: the divider to be there if there is more than one thing there.
+                        if (origUnknownWhere === 5 && countInUnknownWhere === 1) {
+                            configOptions.locations[location].divider = false;
+                        } else {
+                            configOptions.locations[location].divider = true;
+                        }
+                    } else if (location === 'modTools') {
+                        newValue.where = origUnknownWhere;
+                    } else if (typeof value === 'number') {
+                        Object.assign(newValue, knownOptions.locations[location].defaultValue);
+                        newValue.where = value;
+                        if (location === 'unknown') {
+                            //Usurp this value, as it no longer covers the most likely thing (mod tools/flags and inbox).
+                            newValue.where = knownOptions.locations.unknown.defaultValue.where;
+                        }
+                        configOptions.locations[location] = newValue;
+                    }
+                });
+                //Done with upgrade from original version.
+                storeConfigOptions();
+            }
+        }
+    } else if (scriptVersionNumber < lastVersionNumber) {
+        console.log('Downgrade version to', scriptVersion, 'from', lastVersion);
+    }
+    GM_setValue('installedVersion', scriptVersion);
 
     function setTopHeightByConfig() {
         //Set the global topNavHeight by the current configuration.
@@ -154,7 +235,9 @@
 
     function KnownItem(_container, _link, _dialogClass) {
         //Constructor for top-nav items
+        //The <li> containing the <a> which represents a button
         this.container = _container;
+        //The <a> which represents a button
         this.link = _link;
         this.dialogClass = _dialogClass;
     }
@@ -567,7 +650,6 @@
         if (helpButton) {
             if (!configOptions.checkboxes.addHelp && !originalHelpButtonState) {
                 helpButton.parentNode.remove();
-                return;
             }
             return;
         } // else
@@ -576,9 +658,13 @@
         } // else
         //Create the help button
         let helpButtonHtml = '' +
-            '<li class="-item"><a href="#" class="-link js-help-button" title="Help Center and other resources">' +
-            '<svg viewBox="0 0 18 18" width="18" height="18" role="icon" class="svg-icon"><path fill-rule="evenodd" d="M9 0a9 9 0 1 0 .001 18.001A9 9 0 0 0 9 0zm.812 13.126c-.02.716-.55 1.157-1.238 1.137-.659-.02-1.177-.49-1.157-1.209.02-.715.566-1.17 1.225-1.15.691.021 1.194.507 1.17 1.222zm1.956-5.114c-.168.237-.546.542-1.02.912l-.527.361c-.257.197-.417.43-.502.695-.044.141-.076.507-.084.752-.004.048-.032.156-.181.156H7.883c-.165 0-.185-.096-.18-.144.023-.667.12-1.218.397-1.66.374-.594 1.426-1.221 1.426-1.221.161-.12.286-.25.382-.39.177-.24.321-.51.321-.8 0-.333-.08-.65-.293-.915-.249-.31-.518-.458-1.036-.458-.51 0-.808.257-1.021.594-.213.338-.177.735-.177 1.097H5.746c0-1.366.357-2.238 1.112-2.752.51-.35 1.162-.502 1.921-.502.996 0 1.788.184 2.487.715.647.49.988 1.181.988 2.113 0 .575-.2 1.057-.486 1.447z"></path></svg>' +
-            '</a></li>' +
+            '<li class="-item">' +
+            '    <a href="#" class="-link js-help-button" title="Help Center and other resources">' +
+            '        <svg viewBox="0 0 18 18" width="18" height="18" role="icon" class="svg-icon">' +
+            '            <path fill-rule="evenodd" d="M9 0a9 9 0 1 0 .001 18.001A9 9 0 0 0 9 0zm.812 13.126c-.02.716-.55 1.157-1.238 1.137-.659-.02-1.177-.49-1.157-1.209.02-.715.566-1.17 1.225-1.15.691.021 1.194.507 1.17 1.222zm1.956-5.114c-.168.237-.546.542-1.02.912l-.527.361c-.257.197-.417.43-.502.695-.044.141-.076.507-.084.752-.004.048-.032.156-.181.156H7.883c-.165 0-.185-.096-.18-.144.023-.667.12-1.218.397-1.66.374-.594 1.426-1.221 1.426-1.221.161-.12.286-.25.382-.39.177-.24.321-.51.321-.8 0-.333-.08-.65-.293-.915-.249-.31-.518-.458-1.036-.458-.51 0-.808.257-1.021.594-.213.338-.177.735-.177 1.097H5.746c0-1.366.357-2.238 1.112-2.752.51-.35 1.162-.502 1.921-.502.996 0 1.788.184 2.487.715.647.49.988 1.181.988 2.113 0 .575-.2 1.057-.486 1.447z"></path>' +
+            '        </svg>' +
+            '    </a>' +
+            '</li>' +
             '';
         secondaryNavList.insertAdjacentHTML('beforeend', helpButtonHtml);
         helpButton = header.querySelector('.js-help-button');
@@ -588,6 +674,7 @@
     function createSecondaryNavContainers() {
         //Create the additional secondary-nav containers for left and center.
         let headerMain = header.querySelector('.-main');
+        let headerSearch = header.querySelector('.searchbar');
         let logo = headerMain.querySelector('.-logo');
         if (!secondaryNavAfterLogo) {
             logo.insertAdjacentHTML('afterend', '<nav class="secondary-nav ' + nameSpace + 'after-logo"><ol class="-list"></ol></nav>');
@@ -595,10 +682,18 @@
         }
         if (!secondaryNavBeforeSearch) {
             headerMain.insertAdjacentHTML('beforeend', '<nav class="secondary-nav ' + nameSpace + 'before-search"><ol class="-list"></ol></nav>');
-            secondaryNavBeforeSearch = headerMain.querySelector('.' + nameSpace + 'before-search');
+            secondaryNavBeforeSearch = header.querySelector('.' + nameSpace + 'before-search');
+        }
+        if (!secondaryNavAfterSearch) {
+            headerSearch.insertAdjacentHTML('afterend', '<nav class="secondary-nav ' + nameSpace + 'after-search"><ol class="-list"></ol></nav>');
+            secondaryNavAfterSearch = header.querySelector('.' + nameSpace + 'after-search');
         }
         let addCss = '' +
             topNavQualifier + '.top-bar .secondary-nav.' + nameSpace + 'after-logo {\n' +
+            '    margin-right: 15px;\n' +
+            '    margin-left: 10px;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .secondary-nav.' + nameSpace + 'after-search {\n' +
             '    margin-right: 15px;\n' +
             '    margin-left: 10px;\n' +
             '}\n' +
@@ -616,12 +711,11 @@
             if (itemName === 'hamburger' && hamburgerIsConsolidated) {
                 removeNameSpacedElementFromDom('move-' + listItems[itemName].dialogClass);
                 return;
-            }
+            } //else
             if (listItems[itemName] && configOptions.locations[itemName]) {
                 moveItem(listItems[itemName], configOptions.locations[itemName]);
             } else {
-                //This would just report items which the user doesn't have access to (e.g. reviews).
-                //console.log('Unable to move: itemName:', itemName, '::  listItems[itemName]:', listItems[itemName], '::  configOptions.locations[itemName]:', configOptions.locations[itemName]);
+                //Just ignore any expected item slots for which we don't have items.
             }
         });
         listItems.unknown.forEach(function(item) {
@@ -636,13 +730,24 @@
         } else {
             secondaryNavBeforeSearch.style.display = '';
         }
+        if (!secondaryNavAfterSearch.querySelector('.-item')) {
+            secondaryNavAfterSearch.style.display = 'none';
+        } else {
+            secondaryNavAfterSearch.style.display = '';
+        }
     }
 
-    function moveItem(item, which) {
+    function moveItem(item, info) {
         //Move a drop-down menu buttons and it's drop downs.
+        var where = info.where;
+
         function insertDialogCSS() {
             let addCss = topNavQualifier + '.top-bar .' + item.dialogClass + ' {\n';
-            if (which < 10) {
+            if (where > 10) {
+                //Don't move.
+                return;
+            }
+            if (where < 10) {
                 addCss += '' +
                     '    left:' + getLeftByReferenceElToNavContainer(item.container, -1) + 'px;\n' +
                     '    top: ' + topNavHeight + 'px !important;\n' +
@@ -657,15 +762,17 @@
                 dialog.style.top = topNavHeight + 'px';
             }
         }
-        if (!secondaryNavAfterLogo || !secondaryNavBeforeSearch) {
+        if (!secondaryNavAfterLogo || !secondaryNavBeforeSearch || !secondaryNavAfterSearch) {
             createSecondaryNavContainers(header);
         }
         let addListContainer;
-        if (which === 1) {
+        if (where === 1) {
             addListContainer = secondaryNavAfterLogo;
-        } else if (which === 5) {
+        } else if (where === 5) {
             addListContainer = secondaryNavBeforeSearch;
-        } else if (which === 10) {
+        } else if (where === 7) {
+            addListContainer = secondaryNavAfterSearch;
+        } else if (where === 10) {
             addListContainer = originalNav;
         } else {
             return;
@@ -673,6 +780,11 @@
         let addList = addListContainer.querySelector('.-list');
         if (item && addList) {
             addList.appendChild(item.container);
+            if (info.divider) {
+                item.container.classList.add('_has-divider');
+            } else {
+                item.container.classList.remove('_has-divider');
+            }
             if (item.dialogClass) {
                 //Set where the dialog will show. Do this after everything is adjusted.
                 setTimeout(insertDialogCSS, 100);
@@ -725,8 +837,33 @@
 
     function whenHeaderExists() {
         //Changes that need to be made after the DOM loads.
+        var knownButtonDialogs = {
+            'js-inbox-button':         'inbox-dialog',
+            'js-achievements-button':  'achievements-dialog',
+            'js-review-button':        'review-dialog',
+            'js-help-button':          'help-dialog',
+            'js-site-switcher-button': 'siteSwitcher-dialog',
+            'js-mod-inbox-button':     'modInbox-dialog',
+        };
+
         function getDialogFromLinkClass(link) {
-            return link.className.replace(/^.*js-([^-]*)-button\b.*$/, '$1-dialog');
+            //The dialogs are fetched via AJAX. Thus, they don't exist until the button is clicked.
+            //  We either have to know what they are in advance, or just guess.
+            if (!(link instanceof Node)) {
+                return null;
+            }
+            let buttonJsClassMatches = link.className.match(/(?:^| )(js-[^ ]*-button)(?: |$)/);
+            if (buttonJsClassMatches) {
+                let buttonJsClass = buttonJsClassMatches[1];
+                let dialogClass = knownButtonDialogs[buttonJsClass];
+                if (dialogClass) {
+                    return dialogClass;
+                } // else
+                //We don't know this one, so we just Guess. This should not be needed in normal operation.
+                return buttonJsClass.replace(/js-([^ ]*)-button/, '$1-dialog');
+            }
+            //The className does not match anything we understand. In some cases, this is because it's just a button (e.g. moderator tools).
+            return null;
         }
         header = document.querySelector('.top-bar');
         currentUserHref = document.querySelector('.topbar .profile-me,.so-header .my-profile,.top-bar .my-profile').href;
@@ -755,6 +892,10 @@
                     listItems.hamburger = new KnownItem(item, link, 'siteSwitcher-dialog');
                     return;
                 } //else
+                if (/\/admin\/dashboard/.test(link.href)) {
+                    listItems.modTools = new KnownItem(item, link, null);
+                    return;
+                } //else
                 if (['questions', 'jobs', 'tags', 'users'].some(function(testItem) {
                     if (link.id === 'nav-' + testItem) {
                         listItems[testItem] = new KnownItem(item, link);
@@ -765,16 +906,20 @@
                     return;
                 }
             }
-            //XXX testing: This can be used to determine the class to match for unknown drop-downs (e.g. moderator tools).
-            //console.log('item.className:', item.className, '::  link.className:', link.className);
-            //console.log('Unknown item:', item, '::  link:', link);
             //Using getDialogFromLinkClass here is an attempt to have this work on whatever menu happens to exist
             //  for moderators.
-            listItems.unknown.push(new KnownItem(item, link, getDialogFromLinkClass(link)));
+            //Keep output in case of remote debugging. It's no longer expected that these will be routinely used.
+            if (item.matches('.secondary-nav .-item')) {
+                listItems.unknownSecondary.push(new KnownItem(item, link, getDialogFromLinkClass(link)));
+                console.log('Secondary unknown listItems:', listItems.unknownSecondary);
+            } else if (item.matches('.-main .-item')) {
+                listItems.unknownMain.push(new KnownItem(item, link, getDialogFromLinkClass(link)));
+                console.log('Main unknown listItems:', listItems.unknownMain);
+            } else {
+                listItems.unknown.push(new KnownItem(item, link, getDialogFromLinkClass(link)));
+                console.log('unknown listItems:', listItems.unknown);
+            }
         });
-        if (listItems.unknown.length > 0) {
-            //console.log('listItems.unknown:', listItems.unknown);
-        }
         let newNavEl = document.querySelector('.new-topbar');
         //Stack Overflow header
         if (isSO && newNavEl && header) {
@@ -904,7 +1049,7 @@
             //Make the HTML for a NumberOption.
             return '' +
                 '<p class="' + nameSpace + 'OptionSubItem">' +
-                '    <div class="' + nameSpace + 'OptionsNumberContainer" title="' + numberItem.tooltip +'">' +
+                '    <div class="' + nameSpace + 'OptionsNumberContainer" title="' + numberItem.tooltip + '">' +
                          numberItem.textPre +
                 '        <input type="number" min="' + numberItem.min + '" max="' + numberItem.max + '" name="' + nameSpace + 'optionNumber-' + optionKey + '" style="' + numberItem.style + '"/>' +
                          numberItem.textPost +
@@ -916,7 +1061,7 @@
         function createNumberMinimalOptionHtml(optionKey, numberItem) {
             //Make minimal HTML for a NumberOption.
             return '' +
-                '    <span class="' + nameSpace + 'OptionsNumberContainer" title="' + numberItem.tooltip +'">' +
+                '    <span class="' + nameSpace + 'OptionsNumberContainer" title="' + numberItem.tooltip + '">' +
                          numberItem.textPre +
                 '        <input type="number" min="' + numberItem.min + '" max="' + numberItem.max + '" name="' + nameSpace + 'optionNumber-' + optionKey + '" style="' + numberItem.style + '"/>' +
                          numberItem.textPost +
@@ -949,24 +1094,34 @@
         }
         */
 
-        function createLocationOptionHtml(optionKey, radioItem, defaultValue) {
+        function createLocationOptionHtml(optionKey, locationItem, defaultValue) {
             //Make the HTML for a LocationOption.
-            var isLocation = typeof defaultValue !== 'undefined';
-            defaultValue = isLocation ? defaultValue : configOptions.radios[optionKey];
+            var quantityText = '';
+            //Show a count for the unknowns
+            if (/unknown/.test(optionKey)) {
+                quantityText = ' (' + listItems[optionKey].length + ')';
+            }
             var text = '' +
                 '<tr class="' + nameSpace + 'OptionSubItem">' +
-                '<td class="' + nameSpace + 'radiosDescription">' + radioItem.text + '</td>' +
-                '    <td class="' + nameSpace + 'OptionsLocationContainer" title="' + radioItem.tooltip + '">' +
+                '<td class="' + nameSpace + 'radiosDescription">' + locationItem.text + quantityText + '</td>' +
                 '';
-            radioItem.radios.forEach(function(radio) {
+            locationItem.radios.forEach(function(radio) {
                 text += '' +
+                    '<td class="' + nameSpace + 'OptionsLocationRadioContainer" title="' + locationItem.tooltip + '">' +
                     '    <label title="' + radio.tooltip + '">' +
-                    '        <input type="radio" name="' + nameSpace + 'option' + (isLocation ? 'Location' : 'Radio') + '-' + optionKey + '" value="' + radio.defaultValue + '" ' + (radio.defaultValue == defaultValue ? ' checked' : '') + '>' + radio.text +
+                    '        <input type="radio" name="' + nameSpace + 'optionLocationRadio-' + optionKey + '" value="' + radio.defaultValue + '" ' + (radio.defaultValue == defaultValue.where ? ' checked' : '') + '>' + radio.text +
                     '    </label>' +
+                    '</td>' +
                     '';
             });
             text += '' +
-                '    </td>' +
+                '<td class="' + nameSpace + 'OptionsLocationDivider" title="' + locationItem.tooltip + '">' +
+                '    <label title="' + locationItem.divider.tooltip + '">' +
+                '        <input type="checkbox" name="' + nameSpace + 'optionLocation-' + optionKey + '-divider" value="' + defaultValue.divider + '" ' + (defaultValue.divider ? ' checked' : '') + '>' + locationItem.divider.text +
+                '    </label>' +
+                '</td>' +
+                '';
+            text += '' +
                 '</tr>' +
                 '';
             return text;
@@ -1005,7 +1160,8 @@
         var locationDiv = prefContent.querySelector('.' + nameSpace + 'locations-container tbody');
         Object.keys(knownOptions.locations).forEach(function(key) {
             locationDiv.insertAdjacentHTML('beforeend', createLocationOptionHtml(key, knownOptions.locations[key], configOptions.locations[key]));
-            knownOptions.locations[key].inputs = prefContent.querySelectorAll('input[name="' + nameSpace + 'optionLocation-' + key + '"]');
+            knownOptions.locations[key].radioInputs = prefContent.querySelectorAll('input[name="' + nameSpace + 'optionLocationRadio-' + key + '"]');
+            knownOptions.locations[key].dividerInput = prefContent.querySelector('input[name="' + nameSpace + 'optionLocation-' + key + '-divider"]');
         });
         //Create the center margin selections.
         var onSOmargins = prefContent.appendChild(document.createElement('p'));
@@ -1032,7 +1188,7 @@
             '    margin-bottom: 10px;\n' +
             '}\n' +
             nameSpaceClass + 'locations-container label {\n' +
-            '    margin-right: 10px;\n' +
+            '    margin-right: 0px;\n' +
             '    margin-left: 10px;\n' +
             '}\n' +
             nameSpaceClass + 'locations-container ' + nameSpaceClass + 'OptionSubItem {\n' +
@@ -1073,13 +1229,14 @@
             configOptions.checkboxes[key] = knownOptions.checkboxes[key].input.checked;
         });
         Object.keys(knownOptions.locations).forEach(function(key) {
-            var inputs = knownOptions.locations[key].inputs;
+            var inputs = knownOptions.locations[key].radioInputs;
             for (let index = 0; index < inputs.length; index++) {
                 if (inputs[index].checked) {
-                    configOptions.locations[key] = +inputs[index].value;
+                    configOptions.locations[key].where = +inputs[index].value;
                     break;
                 }
             }
+            configOptions.locations[key].divider = knownOptions.locations[key].dividerInput.checked;
         });
         Object.keys(knownOptions.numbers).forEach(function(key) {
             configOptions.numbers[key] = knownOptions.numbers[key].input.value;
@@ -1182,27 +1339,24 @@
         }, {});
     }
 
-    function mergeDefaultConfigOptions(opt) {
+    function mergeDefaultConfigOptions(options) {
         //Only fill in defaults where no value exists.
-        var def = getDefaultConfigOptions();
-        Object.keys(def).forEach(function(key) {
-            if (typeof def[key].defaultValue === 'undefined') {
-                //The key does not contain a default, so is assumed to be a subkey.
-                if (typeof opt[key] !== 'object') {
-                    opt[key] = {};
+        var defaults = getDefaultConfigOptions();
+
+        function mergeDefaultObject(into, from) {
+            Object.keys(from).forEach(function(key) {
+                if (typeof into[key] === 'undefined') {
+                    //Note: use of JSON means the defaults need to be plain Object, Arrays, Number, Boolean, String.
+                    //  RegExp, Date, etc. will not be properly copied. However, we're storing the config as JSON,
+                    //  so that's not a big deal.
+                    into[key] = JSON.parse(JSON.stringify(from[key]));
+                } else if (typeof into[key] === 'object' && typeof from[key] === 'object') {
+                    mergeDefaultObject(into[key], from[key]);
                 }
-                Object.keys(knownOptions[key]).forEach(function(prop) {
-                    if (typeof opt[key][prop] === 'undefined') {
-                        opt[key][prop] = knownOptions[key][prop].defaultValue;
-                    }
-                });
-            } else {
-                if (typeof opt[key] === 'undefined') {
-                    opt[key] = knownOptions[key].defaultValue;
-                }
-            }
-        }, {});
-        return opt;
+            });
+        }
+        mergeDefaultObject(options, defaults);
+        return options;
     }
 
     function getConfigOptions() {
@@ -1213,6 +1367,7 @@
         } catch (e) {
             //JSON.parse failed, storage is corrupt or this is the first time we've used it.
             var defaults = getDefaultConfigOptions();
+            usingDefaults = true;
             console.log('getConfigOptions: using defaults:', defaults);
             storeConfigOptions(defaults);
             return defaults;
