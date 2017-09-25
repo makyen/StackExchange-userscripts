@@ -14,7 +14,7 @@
 // @exclude      *://chat.*.stackexchange.com/*
 // @exclude      *://api.*.stackexchange.com/*
 // @exclude      *://data.stackexchange.com/*
-// @version      1.0.1
+// @version      1.0.2
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_deleteValue
@@ -107,6 +107,7 @@
         checkboxes: {
             consolidateHamburger:            new CheckboxOption(true,  'Merge the Site Switcher with the site logo (on the left).', ''),
             darkTopNavOnSO:                  new CheckboxOption(true,  'Dark Top-Nav theme on Stack Overflow and Meta Stack Overflow.', ''),
+            lightTopNavOnSE:                 new CheckboxOption(false,  'Light Top-Nav theme on all Stack Exchange sites.', ''),
             sticky:                          new CheckboxOption(false, 'Sticky Top-Nav (all sites with new navigation).', ''),
             addHelp:                         new CheckboxOption(true,  'Add the help button if it\'s not already displayed.', ''),
             useJobsForJobsText:              new CheckboxOption(true,  'On Stack Overflow, show "Jobs" instead of "Developer Jobs".', ''),
@@ -378,12 +379,10 @@
             topNavQualifier + '.top-bar .my-profile .-badges .badge3 + .badgecount {\n' +
             '    color: #e4e6e8\n' +
             '}\n' +
+            topNavQualifier + '.top-bar .my-profile .-rep {\n' +
             //Reputation text: Use same color as was used in old top-nav
-            topNavQualifier + '.top-bar .my-profile .-rep {\n' +
             '    color: #e4e6e8\n' +
-            '}\n' +
             //Don't bold the reputation number.
-            topNavQualifier + '.top-bar .my-profile .-rep {\n' +
             '    font-weight: inherit\n' +
             '}\n' +
             topNavQualifier + '.top-bar .navigation .beta-badge {\n' +
@@ -398,13 +397,162 @@
             '    color: #fff !important;\n' +
             '}\n' +
             (isMetaSO ? '' +
-                topNavQualifier + '.top-bar .-logo .-img {\n' +
-                '    background-position: 0px 30px;\n' +
-                '    background-image: url("//i.stack.imgur.com/utBxk.png");\n' +
-                '}\n' +
-                '' : '') +
+             topNavQualifier + '.top-bar .-logo .-img {\n' +
+             '    background-position: 0px 30px;\n' +
+             '    background-image: url("//i.stack.imgur.com/utBxk.png");\n' +
+             '}\n' +
+             '' : '') +
             '';
         addCssStyleTextToDom('g00glen00bModified', css);
+    }
+
+    function addCssLightTheme() {
+        if (!configOptions.checkboxes.lightTopNavOnSE) {
+            removeNameSpacedElementFromDom('lightModified');
+            return;
+        }
+        let css = '' +
+            'body.newheader {\n' +
+            '    padding-top: 0;\n' +
+            '}\n' +
+            '\n' +
+            topNavQualifier + '.top-bar {\n' +
+            '    background-color: #fafafb;\n' +
+            '    box-shadow: 0 1px 0 rgba(12,13,14,0.15), 0 0 0 transparent, 0 0 0 transparent, 0 0 0 transparent;\n' +
+            '    transition: box-shadow cubic-bezier(.165,.84,.44,1) .25s;\n' +
+            '}\n' +
+            '\n' +
+            topNavQualifier + '.top-bar._fixed._scrolling {\n' +
+            '    box-shadow: 0 1px 0 rgba(12,13,14,0.1), 0 1px 3px rgba(12,13,14,0.1), 0 4px 20px rgba(12,13,14,0.035), 0 1px 1px rgba(12,13,14,0.025);\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item .-link {\n' +
+            topNavQualifier + '.top-bar .navigation .-link,\n' +
+            '    color: #535a60;\n' +
+            '}\n' +
+            '.topbar-dialog .header h3,\n' +
+            '.topbar-dialog .header a,\n' +
+            '.topbar-dialog .header a:visited {\n' +
+            '    color: #6a737c;\n' +
+            '    transition: background .3s, color .3s;\n' +
+            '}\n' +
+            '\n' +
+            topNavQualifier + '.top-bar .navigation .-link:hover,\n' +
+            topNavQualifier + '.top-bar .navigation .-link:focus {\n' +
+            '    background-color: #eff0f1;\n' +
+            '    color: #242729;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .my-profile:hover {\n' +
+            '    background-color: #eff0f1;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item .-link:hover,\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item .-link.topbar-icon-on {\n' +
+            '    background-color: #eff0f1;\n' +
+            '    color: #3b4045;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .navigation .-item._current .-link {\n' +
+            '    color: #0C0D0E;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item:not(._current) .-link,\n' +
+            topNavQualifier + '.top-bar .navigation .-item:not(._current) .-link {\n' +
+            '    border-bottom: none\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .navigation .-item:not(._current) .-link:focus:not(:hover) {\n' +
+            '    background-color: #fafafb;\n' +
+            '    color: #848d95;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item:not(._current) .-link:hover,\n' +
+            topNavQualifier + '.top-bar .navigation .-item:not(._current) .-link:hover,\n' +
+            topNavQualifier + '.top-bar .navigation .-item:not(._current) .-link:hover:focus {\n' +
+            '    border-bottom: none\n' +
+            '}\n' +
+            '\n' +
+            '.topbar-dialog .header a:hover {\n' +
+            '    color: #0C0D0E;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .-logo:hover {\n' +
+            '    background-color: #eff0f1;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .indicator-badge {\n' +
+            '    border: 2px solid #fafafb;\n' +
+            '    transition: border .3s,top cubic-bezier(.165, .84, .44, 1) .15s;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-link .indicator-badge:not(._regular) {\n' +
+            '    transition: border .3s,top cubic-bezier(.165, .84, .44, 1) .15s;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item .-link:hover .indicator-badge {\n' +
+            '    border: 2px solid #eff0f1;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .-link.topbar-icon-on {\n' +
+            '    background-color: #eff0f1;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .topbar-dialog .header,\n' +
+            topNavQualifier + '.top-bar .topbar-dialog .header a:not(:hover),\n' +
+            topNavQualifier + '.top-bar .topbar-dialog h3 {\n' +
+            '    background-color: #eff0f1;\n' +
+            '    color: #bbb;\n' +
+            '}\n' +
+            '.achievements-dialog .utc-clock,\n' +
+            '    color: #9199a1;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .topbar-dialog .header a,\n' +
+            '    background-color: #eff0f1;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .indicator-badge._positive {\n' +
+            '    background-color: #33A030;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item .-link._highlighted-positive,\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item .-link._highlighted-positive:hover,\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item .-link._highlighted-positive.topbar-icon-on {\n' +
+            '    color: #5EBA7D;\n' +
+            '}\n' +
+            '.f-input:hover, input.f-input[type="text"]:hover {\n' +
+            '    border-color: rgba(0,149,255,0.5);\n' +
+            '    box-shadow: inset 0 0 2px #d3d6da,0 0 2px rgba(0,149,255,0.2);\n' +
+            '}\n' +
+            '.f-input:focus, input.f-input[type="text"]:focus {\n' +
+            '    border-color: #0095ff;\n' +
+            '    box-shadow: inset 0 0 4px #eff0f1,0 0 5px rgba(0,149,255,0.5);\n' +
+            '    outline: 0;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item .-link.topbar-icon-on .indicator-badge {\n' +
+            '    border-color: #eff0f1;\n' +
+            '}\n' +
+            //Colors used in prior stock top-nav (but use the same color for count as for the badge).
+            topNavQualifier + '.top-bar .my-profile .-badges .badge1 + .badgecount {\n' +
+            '    color: #cda400\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .my-profile .-badges .badge2 + .badgecount {\n' +
+            '    color: #8c9298\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .my-profile .-badges .badge3 + .badgecount {\n' +
+            '    color: #c38b5f\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .my-profile .-rep {\n' +
+            '    color: #3B4059;\n' +
+            '    font-weight: bold\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .navigation .beta-badge {\n' +
+            '    color: inherit\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item .-link:hover,\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item .-link.topbar-icon-on {\n' +
+            '    border-bottom: none !important;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .secondary-nav .-item .-link.topbar-icon-on {\n' +
+            '    background-color: inherit !important;\n' +
+            '    color: #fff !important;\n' +
+            '}\n' +
+            topNavQualifier + '.top-bar .searchbar input[type="text"].f-input {\n' +
+            '    background-color: #FFF;\n' +
+            '    color: #6a737c;\n' +
+            '    border-width: 1px;\n' +
+            '}\n' +
+            //Change color of "Stack" word in StackExchange logo
+            topNavQualifier + '.top-bar .-logo .iconLogoSEAlternativeSm g path:nth-child(1) {\n' +
+            '    fill: #3B4059;\n' +
+            '}\n' +
+            '';
+        addCssStyleTextToDom('lightModified', css);
     }
 
     /* Not used
@@ -820,6 +968,7 @@
         addShortTopNav(topNavHeight);
         addCssNarrowNavigation();
         addCssG00glen00bModifiedDarkTheme();
+        addCssLightTheme();
     }
 
 
@@ -905,9 +1054,9 @@
             return '' +
                 '<p class="' + nameSpace + 'OptionSubItem">' +
                 '    <div class="' + nameSpace + 'OptionsNumberContainer" title="' + numberItem.tooltip +'">' +
-                         numberItem.textPre +
+                numberItem.textPre +
                 '        <input type="number" min="' + numberItem.min + '" max="' + numberItem.max + '" name="' + nameSpace + 'optionNumber-' + optionKey + '" style="' + numberItem.style + '"/>' +
-                         numberItem.textPost +
+                numberItem.textPost +
                 '    </div>' +
                 '</p>' +
                 '';
@@ -917,9 +1066,9 @@
             //Make minimal HTML for a NumberOption.
             return '' +
                 '    <span class="' + nameSpace + 'OptionsNumberContainer" title="' + numberItem.tooltip +'">' +
-                         numberItem.textPre +
+                numberItem.textPre +
                 '        <input type="number" min="' + numberItem.min + '" max="' + numberItem.max + '" name="' + nameSpace + 'optionNumber-' + optionKey + '" style="' + numberItem.style + '"/>' +
-                         numberItem.textPost +
+                numberItem.textPost +
                 '    </span>' +
                 '';
         }
@@ -1103,6 +1252,7 @@
         }
         moveItems();
         addCssG00glen00bModifiedDarkTheme();
+        addCssLightTheme();
         setScrollingNav();
         addHelpButton();
         setJobsText();
@@ -1226,7 +1376,7 @@
         //  user script storage, then listen for changes to the shortcut key (e.g. in another tab).
         if (!canListenGMStorage || //Not available: Greasemonkey
             configOptionsChangeListener //Already added, don't add again
-        ) {
+           ) {
             return;
         }
         configOptionsChangeListener = GM_addValueChangeListener('configOptions', function(name, oldValue, newValue, remote) {
