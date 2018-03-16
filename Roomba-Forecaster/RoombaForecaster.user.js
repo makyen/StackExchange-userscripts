@@ -386,7 +386,7 @@
                         user_type:document.querySelector('#question .owner .user-details a')?'valid':'does_not_exist', // 'does_not_exist' if not exist
                     },
                     view_count:+getRestOfTextWithMatchingText('#qinfo p.label-key','times'),
-                    comment_count:document.querySelectorAll('#question tr.comment').length,
+                    comment_count:document.querySelectorAll('#question .comment').length,
                     reopen_vote_count:0,
                     answer_count:0,
                     is_answered:false
