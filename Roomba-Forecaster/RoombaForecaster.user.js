@@ -331,6 +331,13 @@
             var xhr = new XMLHttpRequest();
             xhr.open(type, url);
             xhr.addEventListener('load', function(ev) {
+                if (xhr.status !== 200) {
+                    //If there is a non- 200 status returned, log the response.
+                    console.log('Error in response to SE API call: status,', xhr.status, ':: statusText,', xhr.statusText, ':: responseText:', xhr.responseText);
+                    console.log('Using Scraping:');
+                    fakeAPIByScraping(type, url, data, callback);
+                    return;
+                }
                 if(typeof callback === 'function'){
                     callback(ev.target.response);
                 }
