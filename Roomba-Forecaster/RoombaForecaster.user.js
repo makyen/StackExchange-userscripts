@@ -197,7 +197,6 @@
     function asArray(obj) {
         //Accepts Arrays, array-like Objects (e.g. NodeLists), single elements, primitives.
         //  Returns an array, even if the array only has one entry.
-        var newArr = [];
         if(typeof obj !== 'object' || obj instanceof Node) {
             return [obj];
         }
@@ -207,14 +206,27 @@
         if(obj === null) {
             return null;
         }
+        var newArr;
         if(typeof obj.length === 'number') {
-            //NodeList and other array-like objects: faster in most browsers and
+            //NodeList and other array-like objects: faster in all tested browsers and
             //  more compatible than Array.from().
-            newArr.push.apply(newArr, obj);
-            return newArr;
+            if(isChrome || isOpera || isBlink) {
+                const length = obj.length;
+                newArr = new Array(length);
+                for (var i = 0; i < length; i++) {
+                    newArr[i] = obj[i];
+                }
+                return newArr;
+            } else {
+                //Fastest in Firefox, IE11, and Edge. Used as default for non-Blink engines
+                newArr = [];
+                newArr.push.apply(newArr, obj);
+                return newArr;
+            }
         }
         if(typeof obj.nextNode === 'function') {
             //e.g. TreeWalkers, NodeIterator
+            newArr = [];
             var currentNode;
             /* jshint -W084 */
             while(currentNode = nodeIter.nextNode()) {
