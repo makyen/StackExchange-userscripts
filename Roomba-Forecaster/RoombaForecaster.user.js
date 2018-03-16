@@ -431,9 +431,9 @@
                     question.accepted_answer_id = +acceptedAnswer.dataset.answerid;
                 }
                 //closed/duplicate/locked
-                var statusTextEl = asArray(document.querySelectorAll('#question .special-status .question-status H2 B'));
+                var statusTextEls = asArray(document.querySelectorAll('#question .special-status .question-status H2 B'));
                 var isDeleted = false;
-                statusTextEl.forEach(function(el){
+                statusTextEls.forEach(function(el){
                     //There is a special status with at least one entry
                     var statusText = el.textContent;
                     if(statusText.search(/hold|closed|marked/i) > -1) {
@@ -443,7 +443,6 @@
                             question.closed_reason = 'duplicate';
                         }
                         question.closed_date = elementTooltipTextAsDateSeconds(el.parentNode.parentNode.querySelector('span.relativetime'));
-
                     } else if(statusText.search(/locked/i) > -1) {
                         //Question is locked.
                         question.locked_date = elementTooltipTextAsDateSeconds(el.parentNode.parentNode.querySelector('span.relativetime'));
