@@ -1307,6 +1307,11 @@
                 hideOptions();
             }
 
+            function getEffectiveColor(element,styleText,defaultValue){
+                defaultValue = defaultValue ? defaultValue : 'white';
+                return getEffectiveStyleValue(element,styleText,/(?:transparent|initial|inherit|currentColor|unset|rgba.*,\s*0+(?:\.\d*)?\s*\))/i, defaultValue);
+            }
+
             function getEffectiveStyleValue(element,styleText,rejectRegex,defaultValue){
                 var foundStyleValue;
                 do {
@@ -1328,7 +1333,7 @@
                 //  inherited color is usually 'transparent', which does not work for an overlay.
                 //  Should really do a numeric check on rgba() alpha values, but a RegExp appears
                 //  sufficient for the pragmatically generated values.
-                document.getElementById('roombaOptionsAbsoluteDiv').style.backgroundColor = getEffectiveStyleValue(document.getElementById('content'),'background-color',/(?:transparent|initial|inherit|currentColor|unset|rgba.*,\s*0+(?:\.\d*)?\s*\))/i,'white');
+                document.getElementById('roombaOptionsAbsoluteDiv').style.backgroundColor = getEffectiveColor(document.getElementById('content'),'background-color');
             }
 
             function addDisplayOptionsClickListeners(){
