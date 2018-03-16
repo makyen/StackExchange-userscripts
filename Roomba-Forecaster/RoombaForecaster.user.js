@@ -1641,11 +1641,15 @@
                 downvoteWillQualify = testCriteriaAndMakeHtml(curRoomba) | downvoteWillQualify;
             });
 
-            //Get the minimum number of days to a Roomba and the frequency (daily is a priority over weekly).
+            //Get the minimum number of days to a Roomba and the frequency.
             var minRoombaDays = 999;
             var roombaFrequency = '';
+            //First, determine the minimum number of days
             roombas.forEach(function(curRoomba){
                 minRoombaDays = Math.min(curRoomba.remainingDays,minRoombaDays);
+            });
+            //Then get the matching frequency, which may have multiple matches, but daily is the priority over weekly.
+            roombas.forEach(function(curRoomba){
                 if(roombaFrequency !== 'daily' && minRoombaDays === curRoomba.remainingDays){
                     roombaFrequency = curRoomba.frequency;
                 }
