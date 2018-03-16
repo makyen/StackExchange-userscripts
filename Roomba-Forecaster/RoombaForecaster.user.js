@@ -9,13 +9,16 @@
 // @run-at       document-start
 // @grant        GM_getValue
 // @grant        GM_setValue
-// @include      /^https?:\/\/([^/]*\.)?stackoverflow.com/questions/\d.*$/
-// @include      /^https?:\/\/([^/]*\.)?serverfault.com/questions/\d.*$/
-// @include      /^https?:\/\/([^/]*\.)?superuser.com/questions/\d.*$/
-// @include      /^https?:\/\/([^/]*\.)?stackexchange.com/questions/\d.*$/
-// @include      /^https?:\/\/([^/]*\.)?askubuntu.com/questions/\d.*$/
-// @include      /^https?:\/\/([^/]*\.)?stackapps.com/questions/\d.*$/
-// @include      /^https?:\/\/([^/]*\.)?mathoverflow\.net/questions/\d.*$/
+// @grant        GM.getValue
+// @grant        GM.setValue
+// @require      https://github.com/SO-Close-Vote-Reviewers/UserScripts/raw/master/gm4-polyfill.js
+// @include      /^https?://([^/]*\.)?stackoverflow\.com/q(uestions)?/\d.*$/
+// @include      /^https?://([^/]*\.)?serverfault\.com/q(uestions)?/\d.*$/
+// @include      /^https?://([^/]*\.)?superuser\.com/q(uestions)?/\d.*$/
+// @include      /^https?://([^/]*\.)?stackexchange\.com/q(uestions)?/\d.*$/
+// @include      /^https?://([^/]*\.)?askubuntu\.com/q(uestions)?/\d.*$/
+// @include      /^https?://([^/]*\.)?stackapps\.com/q(uestions)?/\d.*$/
+// @include      /^https?://([^/]*\.)?mathoverflow\.net/q(uestions)?/\d.*$/
 // ==/UserScript==
 /* jshint laxbreak:true */
 
@@ -64,10 +67,6 @@
         showIfDownvoteWillRoomba : true, //Show if a downvote is enough to qualify for Roomba.
         alwaysShowRoombaTable : false    //If !useToolTip controls display of larger Roomba table
     };
-    const configKeys = Object.keys(config);
-    var configSaveWorking = true;
-    restoreConfig();
-    rationalizeConfig();
 
     /* The following code for detecting browsers is from my answer at:
      *   http://stackoverflow.com/a/41820692/3773011
@@ -90,10 +89,18 @@
     // Blink engine detection (tested on Chrome 55.0.2883.87 and Opera 42.0)
     const isBlink = (isChrome || isOpera) && !!window.CSS;
 
-    if(document.readyState === 'loading') {
-        window.addEventListener('DOMContentLoaded',setup);
-    } else {
-        setup();
+    const configKeys = Object.keys(config);
+    var configSaveWorking = true;
+    restoreConfig().then(afterRestoreConfig,afterRestoreConfig);
+
+    function afterRestoreConfig(){
+        rationalizeConfig();
+
+        if(document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', setup);
+        } else {
+            setup();
+        }
     }
 
     function setup(){
@@ -131,25 +138,23 @@
     }
 
     function saveConfig(){
-        try {
-            GM_setValue('config',JSON.stringify(config));
-        } catch(e) {
+        return GM.setValue('config',JSON.stringify(config)).catch((e) => {
             console.error(e);
             configSaveWorking = false;
-        }
+        });
     }
 
     function restoreConfig(){
         var storedConfig=JSON.stringify({});
-        try {
-            storedConfig = JSON.parse(GM_getValue('config',storedConfig));
+        return GM.getValue('config',storedConfig).then((inStorage) => {
+            storedConfig = JSON.parse(inStorage);
             Object.keys(storedConfig).forEach(function(key){
                 config[key] = storedConfig[key];
             });
-        } catch(e) {
+        }).catch((e) => {
             console.error(e);
             configSaveWorking = false;
-        }
+        });
     }
 
     function rationalizeConfigLikeObject(obj){
@@ -1448,10 +1453,13 @@
 
             function optionsSave(){
                 //Handle a click on the Save button.
+
+                function afterSaveConfig() {
+                    hideOptions();
+                    addOrUpdateRoomba();
+                }
                 applyOptionsDialogStateToObject(config);
-                saveConfig();
-                hideOptions();
-                addOrUpdateRoomba();
+                saveConfig().then(afterSaveConfig,afterSaveConfig);
             }
 
             function optionsCancel(){
