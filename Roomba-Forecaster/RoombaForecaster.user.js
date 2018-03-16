@@ -285,7 +285,7 @@
                 time: {
                     daysDelayFromEdit: 9,
                     daysDelayFromClose: 9,
-                    daysOffsetFromReportedCloseToClose: 12 //Basically, a fudge factor based on observed behavior of hold to delete date.
+                    daysOffsetFromReportedCloseToClose: 2 //Basically, a fudge factor based on observed behavior of hold to delete date.
                 }
             }
         }));
