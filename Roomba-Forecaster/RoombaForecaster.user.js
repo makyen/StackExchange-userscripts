@@ -316,8 +316,8 @@
             frequency: 'weekly',
             criteria: {
                 isLocked: false,
-                maxScore: 0,  //While stated as === not <=, < is coverd by 30 day
-                maxScoreOwnerDeleted: 1,  //Qs from deleted users don't get deleted if score === 0.
+                maxScore: 0,  //While stated as === not <=, < is covered by 30 day
+                maxScoreOwnerDeleted: 1,  //Questions from deleted users don't get deleted if score === 0.
                 maxAnswers: 0,
                 ageToViewMultiplier: 1.5,
                 maxComments: 1,
@@ -790,7 +790,7 @@
         removeExistingRoombaElementsIfExist();
         var roombaFieldId = addRoombaField();
         if(roombaFieldId === 'ABORT') {
-            //Hadle a issue in Edge where this script is run twice for no apparent reason.
+            //Handle an issue in Edge where this script is run twice for no apparent reason.
             return;
         }
         insertStyles();
@@ -951,7 +951,7 @@
                             //The number of days remaining is based on the age of the question.
                             if(curRoomba.frequency === 'weekly'){
                                 //But, if the Roomba is weekly, then we need to compute the days to the next time the weekly Roomba will run.
-                                //Find the time at which the question could first be/have been Roomba'ed.
+                                //Find the time at which the question could first be/have been Roomba'd.
                                 const firstPossibleRoomba = getFirstPossibleWeeklyRoombaPastDate(question.creation_date + time.age * SECONDS_IN_DAY);
                                 //The next weekly Roomba will run at
                                 const firstRoombaFromNow = getFirstPossibleWeeklyRoombaPastDate(getNowDay() * SECONDS_IN_DAY);
@@ -1228,7 +1228,7 @@
 
                         }
                         if(downvoteQualifies & DOWNVOTE_QUALIFIES_ANSWER){
-                            //Downvoting the highest voted anser will qualify.
+                            //Downvoting the highest voted answer will qualify.
                             //XXX Should detect that if that answer has already been downvoted by the user.
                             if(downvoteText !== ''){
                                 downvoteText += ' & ';
@@ -1414,7 +1414,7 @@
                 let optionsAbsDiv = document.getElementById('roombaOptionsAbsoluteDiv');
                 optionsAbsDiv.style.opacity=0;
                 optionsAbsDiv.style.pointerEvents='none';
-                //Stop listenting for window clicks to hide the options.
+                //Stop listening for window clicks to hide the options.
                 window.removeEventListener('click',windowClickWhileOptionsShown,false);
             }
 
@@ -1453,7 +1453,7 @@
 
             function applyOptionsDialogStateToObject(obj){
                 //Read the state of the controls in the options dialog and apply the
-                //  state to the suppllied Object.
+                //  state to the supplied Object.
                 configKeys.forEach(function(key){
                     var el = document.getElementById('roombaOptionsCheckbox-'+key);
                     if(el){
