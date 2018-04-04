@@ -168,8 +168,11 @@
             }
         }
         if (isHere) {
-            const orderedListParent = getClosestMatchingParent(isHere, 'ol');
-            const thisIs = orderedListParent ? orderedListParent.querySelector('.-item') : null;
+            const hereItem = getClosestMatchingParent(isHere, '.-item'); //It should be the same element
+            var thisIs = hereItem;
+            while (thisIs && !getFirstChildWithClass(thisIs, 'pl8')) {
+                thisIs = thisIs.previousSibling;
+            }
             let link = null;
             if (thisIs) {
                 thisIs.classList.add('thisisYouarehere');
