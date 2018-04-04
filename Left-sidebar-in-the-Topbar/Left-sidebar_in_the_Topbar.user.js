@@ -3,17 +3,7 @@
 // @description   Put the left-sidebar in the topbar.
 // @author        Makyen
 // @namespace     MakyenStackExchangeAdjustments
-// @match         *://*.stackoverflow.com/*
-// @match         *://*.superuser.com/*
-// @match         *://*.serverfault.com/*
-// @match         *://*.askubuntu.com/*
-// @match         *://*.stackapps.com/*
-// @match         *://*.stackexchange.com/*
-// @exclude       *://chat.stackoverflow.com/*
-// @exclude       *://chat.stackexchange.com/*
-// @exclude       *://chat.*.stackexchange.com/*
-// @exclude       *://api.*.stackexchange.com/*
-// @exclude       *://data.stackexchange.com/*
+// @match         *://stackoverflow.com/*
 // @version       1.0.0
 // @grant         none
 // @run-at        document-start
