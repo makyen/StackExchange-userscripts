@@ -2,6 +2,10 @@
 This repository contains user scripts for use on Stack Exchange.  The scripts are
 compatible with [Tampermonkey](http://tampermonkey.net/) (Chrome, Firefox, Opera Next, Safari, Microsoft Edge, Dolphin Browser, UC Browser, etc.) and [Greasemonkey](http://www.greasespot.net/) (Firefox). In general, they will have been tested in Chrome, Firefox, Opera and Edge.
 
+## [Chat: Scroll the Starboard](https://github.com/makyen/StackExchange-userscripts/blob/master/Chat-Scroll-the-Starboard/SE_Chat_Scroll_the_Starboard.user.js)&nbsp;<sub><sup>([install](https://github.com/makyen/StackExchange-userscripts/raw/master/Chat-Scroll-the-Starboard/SE_Chat_Scroll_the_Starboard.user.js))</sup></sub>
+
+Makes the starboard in SE chat's right sidebar scroll, so you can see all of the currently "active" starred messages. It doesn't change the messages which are displayed; that's still up to Stack Exchange's chat.
+
 ## [Flag from User Pages](https://github.com/makyen/StackExchange-userscripts/blob/master/Flag-from-User-Pages/Flag_from_User_Pages.user.js)&nbsp;<sub><sup>([install](https://github.com/makyen/StackExchange-userscripts/raw/master/Flag-from-User-Pages/Flag_from_User_Pages.user.js))</sup></sub>
 
 Add a flag link that opens the flag dialog for each post in user profiles.
