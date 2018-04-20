@@ -28,6 +28,7 @@
             border-right-width: 0px;
             height: 46px;
             position: relative;
+            padding: 0px;
         }
         .top-bar .makyen-left-sidebar-icon-container .-link {
             height: 44px;
@@ -101,7 +102,7 @@
             icon = toss.querySelector('svg');
         }
         const cloneIcon = icon.cloneNode(true);
-        sidebarContainer.insertAdjacentHTML('afterbegin', '<div class="makyen-left-sidebar-icon-container secondary-nav"><div class="-item"><div class="-link" title="Display the left-sidebar as a drop-down"></div></div></div>');
+        sidebarContainer.insertAdjacentHTML('afterbegin', '<div class="makyen-left-sidebar-icon-container -secondary"><div class="-item"><div class="-link" title="Display the left-sidebar as a drop-down"></div></div></div>');
         const iconContainer = getFirstChildWithClass(sidebarContainer, 'makyen-left-sidebar-icon-container');
         const iconLink = iconContainer.querySelector('.-link');
         iconContainer.classList.add('themed-bd');
