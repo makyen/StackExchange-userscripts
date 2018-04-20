@@ -23,16 +23,16 @@
             margin-right: 0.5vw;
             position:relative;
         }
-        .top-bar .makyen-sidebar-icon-container {
+        .top-bar .makyen-left-sidebar-icon-container {
             border-bottom: 3px solid #F48024;
             border-right-width: 0px;
             height: 46px;
             position: relative;
         }
-        .top-bar .makyen-sidebar-icon-container .-link {
+        .top-bar .makyen-left-sidebar-icon-container .-link {
             height: 44px;
         }
-        .top-bar .makyen-sidebar-icon-container > * {
+        .top-bar .makyen-left-sidebar-icon-container > * {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -83,8 +83,8 @@
         if (useOriginalSEWidth) {
             header.classList.remove('_with-left-nav');
         }
-        const headContainter = getFirstChildWithClass(header, '-container');
-        const headerMain = getFirstChildWithClass(headContainter, '-main');
+        const headContainer = getFirstChildWithClass(header, '-container');
+        const headerMain = getFirstChildWithClass(headContainer, '-main');
         const mainLogo = getFirstChildWithClass(headerMain, '-logo');
         const sidebarContainer = document.createElement('div');
         sidebarContainer.classList.add('makyen-left-sidebar-container');
@@ -101,8 +101,8 @@
             icon = toss.querySelector('svg');
         }
         const cloneIcon = icon.cloneNode(true);
-        sidebarContainer.insertAdjacentHTML('afterbegin', '<div class="makyen-sidebar-icon-container secondary-nav"><div class="-item"><div class="-link"></div></div></div>');
-        const iconContainer = getFirstChildWithClass(sidebarContainer, 'makyen-sidebar-icon-container');
+        sidebarContainer.insertAdjacentHTML('afterbegin', '<div class="makyen-left-sidebar-icon-container secondary-nav"><div class="-item"><div class="-link" title="Display the left-sidebar as a drop-down"></div></div></div>');
+        const iconContainer = getFirstChildWithClass(sidebarContainer, 'makyen-left-sidebar-icon-container');
         const iconLink = iconContainer.querySelector('.-link');
         iconContainer.classList.add('themed-bd');
         iconLink.appendChild(cloneIcon);
@@ -113,7 +113,7 @@
         sidebarContainer.appendChild(sidebar);
         if (leftSidebarFirst) {
             //Put the sidebar first:
-            headContainter.insertBefore(sidebarContainer, headContainter.firstChild);
+            headContainer.insertBefore(sidebarContainer, headContainer.firstChild);
         } else {
             //Put the sidebar after the main logo:
             mainLogo.parentNode.insertBefore(sidebarContainer, mainLogo.nextSibling);
