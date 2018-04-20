@@ -4,7 +4,7 @@
 // @author        Makyen
 // @namespace     MakyenStackExchangeAdjustments
 // @match         *://stackoverflow.com/*
-// @version       1.0.1
+// @version       1.0.2
 // @grant         none
 // @run-at        document-start
 // ==/UserScript==
