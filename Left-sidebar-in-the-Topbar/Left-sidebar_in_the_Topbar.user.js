@@ -19,9 +19,8 @@
     //Add the styles for the left-sidebar in the topbar
     const leftSidebarInTopbar = `
         .top-bar .makyen-left-sidebar-container {
-            width: 40px;
-            margin-left: 10px;
-            margin-right: 5px;
+            margin-left: 1.0vw;
+            margin-right: 0.5vw;
             position:relative;
         }
         .top-bar .makyen-sidebar-icon-container {
@@ -32,7 +31,6 @@
         }
         .top-bar .makyen-sidebar-icon-container .-link {
             height: 44px;
-            width: 40px;
         }
         .top-bar .makyen-sidebar-icon-container > * {
             position: absolute;
