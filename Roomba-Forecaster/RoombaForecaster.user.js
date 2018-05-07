@@ -21,7 +21,7 @@
 // @include      /^https?://([^/]*\.)?mathoverflow\.net/q(uestions)?/\d.*$/
 // ==/UserScript==
 
-/*This is a fork of "Roombaforcast" by Siguza, which can be obtained from:
+/*This is a fork of "Roombaforecast" by Siguza, which can be obtained from:
  *  https://github.com/Siguza/StackScripts/blob/master/RoombaForecast.user.js
  *  The portions of code retained from that source are:
  *    XHR()
@@ -45,7 +45,7 @@
  *   * Scraping doesn't consume any of the API request quota, which may be of value to
  *       power users.
  * Scraping was implemented prior to determining that this would be a separate project,
- * rather than pulled back into Roombaforcast, which does not have an API key.  Thus, at the
+ * rather than pulled back into Roombaforecast, which does not have an API key.  Thus, at the
  * time the scraping capability was written, no API key existed for this script which
  * limited it to a max of 300 requests/IP/day.  Scraping/API use can now be set through the
  * options UI by opening it using Shift, Ctrl, or Alt when clicking on the "roomba" status
@@ -180,7 +180,7 @@
 
     function detectAndRemoveRoombaForecastChanges(last) {
         //Prevent there from being two "roomba" lines if both this script and
-        // RoombaForcast are installed.
+        // RoombaForecast are installed.
         var table = document.getElementById('qinfo');
         //loop through the table cells not added by this script looking for 'roomba'
         if (!asArray(table.querySelectorAll('td:not(#roombaFieldRowLabel)')).some(function(cell) {
@@ -865,7 +865,7 @@
                     } //else
                     var override = false;
                     if ((getNowDay() - question.closedDay) < 16) {
-                        //This question: http://softwareengineering.stackexchange.com/q/122569/151503 meets all of the stated criteria, but has not
+                        //This question: https://softwareengineering.stackexchange.com/q/122569/151503 meets all of the stated criteria, but has not
                         //  been deleted in many years. Thus, there are some unstated criteria. The unstated criteria which allow a question to remain
                         //  undeleted are handled by checking if there has been enough time for the weekly Roomba to have deleted the question, twice.
                         //  If that is the case, then it is assumed that the Roomba will never delete it.
