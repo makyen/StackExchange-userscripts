@@ -12,7 +12,7 @@ Add a flag link that opens the flag dialog for each post in user profiles.
 
 ## [Left-sidebar in the Topbar](https://github.com/makyen/StackExchange-userscripts/blob/master/Left-sidebar-in-the-Topbar/Left-sidebar_in_the_Topbar.user.js)&nbsp;<sub><sup>([install](https://github.com/makyen/StackExchange-userscripts/raw/master/Left-sidebar-in-the-Topbar/Left-sidebar_in_the_Topbar.user.js))</sup></sub>
 
-Moves the left-sidebar into a drop-down menu in the top-bar.
+Moves the left-sidebar into a drop-down menu in the top-bar. This now uses the SE "standard" top-bar version of the left-sidebar. Installing this userscript makes all SE sites which have the left-sidebar put it in the top-bar regardless of the per-site SE preference you've set.
 
 ## [Roomba Forecaster](https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster)&nbsp;<sub><sup>([install](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/RoombaForecaster.user.js))</sup></sub>
 
