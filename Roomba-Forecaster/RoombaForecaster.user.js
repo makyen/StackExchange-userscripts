@@ -30,7 +30,7 @@
  *    Most of the lines invoking the above functions.
  *    Some of the lines in the ==UserScript== block.
  *  All code from the above source has been released to the public domain. There
- *  may  be some which is not listed above, but reasonable effort has been made to
+ *  may  be some which is not listed above, but a reasonable effort has been made to
  *  list all the code which was retained.
  */
 
