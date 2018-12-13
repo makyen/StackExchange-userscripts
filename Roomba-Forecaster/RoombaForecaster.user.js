@@ -2,7 +2,7 @@
 // @name         Roomba Forecaster
 // @author       Makyen
 // @author       Siguza
-// @version      2.0.1
+// @version      2.1.0
 // @description  Is Roomba going to delete the question? If not, why? If so, when?
 // @namespace    makyen-RoombaForecaster
 // @homepage     https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster
@@ -12,16 +12,16 @@
 // @grant        GM.getValue
 // @grant        GM.setValue
 // @require      https://github.com/SO-Close-Vote-Reviewers/UserScripts/raw/master/gm4-polyfill.js
-// @include      /^https?://([^/]*\.)?stackoverflow\.com/q(uestions)?/\d.*$/
-// @include      /^https?://([^/]*\.)?serverfault\.com/q(uestions)?/\d.*$/
-// @include      /^https?://([^/]*\.)?superuser\.com/q(uestions)?/\d.*$/
-// @include      /^https?://([^/]*\.)?stackexchange\.com/q(uestions)?/\d.*$/
-// @include      /^https?://([^/]*\.)?askubuntu\.com/q(uestions)?/\d.*$/
-// @include      /^https?://([^/]*\.)?stackapps\.com/q(uestions)?/\d.*$/
-// @include      /^https?://([^/]*\.)?mathoverflow\.net/q(uestions)?/\d.*$/
+// @include      /^https?://([^/]*\.)?stackoverflow\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?serverfault\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?superuser\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?stackexchange\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?askubuntu\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?stackapps\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?mathoverflow\.net/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
 // ==/UserScript==
 
-/*This is a fork of "Roombaforcast" by Siguza, which can be obtained from:
+/*This is a fork of "Roombaforecast" by Siguza, which can be obtained from:
  *  https://github.com/Siguza/StackScripts/blob/master/RoombaForecast.user.js
  *  The portions of code retained from that source are:
  *    XHR()
@@ -30,7 +30,7 @@
  *    Most of the lines invoking the above functions.
  *    Some of the lines in the ==UserScript== block.
  *  All code from the above source has been released to the public domain. There
- *  may  be some which is not listed above, but reasonable effort has been made to
+ *  may  be some which is not listed above, but a reasonable effort has been made to
  *  list all the code which was retained.
  */
 
@@ -45,7 +45,7 @@
  *   * Scraping doesn't consume any of the API request quota, which may be of value to
  *       power users.
  * Scraping was implemented prior to determining that this would be a separate project,
- * rather than pulled back into Roombaforcast, which does not have an API key.  Thus, at the
+ * rather than pulled back into Roombaforecast, which does not have an API key.  Thus, at the
  * time the scraping capability was written, no API key existed for this script which
  * limited it to a max of 300 requests/IP/day.  Scraping/API use can now be set through the
  * options UI by opening it using Shift, Ctrl, or Alt when clicking on the "roomba" status
@@ -88,8 +88,25 @@
     const isBlink = (isChrome || isOpera) && !!window.CSS;
 
     const configKeys = Object.keys(config);
+    const isCloseReview = window.location.pathname.indexOf('/review/close/') === 0;
+    const isMagicTag = window.location.pathname.indexOf('/review/MagicTagReview') === 0;
+    const isMeta = /(?:^|\.)meta\./.test(window.location.hostname);
+    const beforeRoombaTableSelector = '#qinfo, .reviewable-post-stats > table, .review-task .review-sidebar .review-information';
+    const sidebarSelector = '#sidebar, .sidebar, .review-task .review-sidebar';
+    const sitesMustUseAPI = [].concat.apply([], [
+        'pt.stackoverflow.com',
+        'es.stackoverflow.com',
+        'ru.stackoverflow.com',
+        'ja.stackoverflow.com',
+        'rus.stackexchange.com',
+    ].map((site) => [site, site.replace(/\./, '.meta.')]));
+    let mustUseAPI = sitesMustUseAPI.indexOf(window.location.hostname) > -1 || isCloseReview;
     var configSaveWorking = true;
     restoreConfig().then(afterRestoreConfig, afterRestoreConfig);
+
+    function getElementContainingRoombaTable() {
+        return document.querySelector(beforeRoombaTableSelector);
+    }
 
     function afterRestoreConfig() {
         rationalizeConfig();
@@ -104,7 +121,7 @@
     function setup() {
         function delayUpdateRoomba() {
             //Allow some time for the API to process the vote.
-            setTimeout(addOrUpdateRoomba, config.scrapePage ? 250 : 2000);
+            setTimeout(addOrUpdateRoomba, (config.scrapePage && !mustUseAPI) ? 250 : 2000);
         }
 
         function updateRoombaIfClickIsVote(event) {
@@ -113,26 +130,185 @@
                 delayUpdateRoomba();
             }
         }
+
+        function inPageDetectAjaxComplete() {
+            var ajaxCompleteTimer;
+            //Global jQuery AJAX listener: Catches user moving to the next review.
+            $(document).ajaxComplete(function(event, jqXHR, ajaxSettings) {
+                //Debounce the detection of AJAX calls, as there are sometimes several at one time.
+                clearTimeout(ajaxCompleteTimer);
+                ajaxCompleteTimer = setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('roombaForecaster-jQueryAJAX-complete', {
+                        bubbles: true,
+                        cancelable: true,
+                        detail: ajaxSettings.url,
+                    }));
+                }, 500);
+            });
+        }
+
+        /*Copied from various other scripts of mine*/
+        function executeInPage(functionToRunInPage, leaveInPage, id) {
+            //Execute a function in the page context.
+            // Any additional arguments passed to this function are passed into the page to the
+            // functionToRunInPage.
+            // Such arguments must be Object, Array, functions, RegExp,
+            // Date, and/or other primitives (Boolean, null, undefined,
+            // Number, String, but not Symbol).  Circular references are
+            // not supported. Prototypes are not copied.
+            // Using () => doesn't set arguments, so can't use it to define this function.
+            // This has to be done without jQuery, as jQuery creates the script
+            // within this context, not the page context, which results in
+            // permission denied to run the function.
+            function convertToText(args) {
+                //This uses the fact that the arguments are converted to text which is
+                //  interpreted within a <script>. That means we can create other types of
+                //  objects by recreating their normal JavaScript representation.
+                //  It's actually easier to do this without JSON.stringify() for the whole
+                //  Object/Array.
+                var asText = '';
+                var level = 0;
+
+                function lineSeparator(adj, isntLast) {
+                    level += adj - ((typeof isntLast === 'undefined' || isntLast) ? 0 : 1);
+                    asText += (isntLast ? ',' : '') + '\n' + (new Array((level * 2) + 1)).join('');
+                }
+
+                function recurseObject(obj) {
+                    if (Array.isArray(obj)) {
+                        asText += '[';
+                        lineSeparator(1);
+                        obj.forEach(function(value, index, array) {
+                            recurseObject(value);
+                            lineSeparator(0, index !== array.length - 1);
+                        });
+                        asText += ']';
+                    } else if (obj === null) {
+                        asText += 'null';
+                    } else if (obj === void (0)) {
+                        //undefined
+                        asText += 'void(0)';
+                    } else if (Number.isNaN(obj)) {
+                        //Special cases for Number
+                        //Not a Number (NaN)
+                        asText += 'Number.NaN';
+                    } else if (obj === 1 / 0) {
+                        // +Infinity
+                        asText += '1/0';
+                    } else if (obj === 1 / -0) {
+                        // -Infinity
+                        asText += '1/-0';
+                    } else if (obj instanceof RegExp || typeof obj === 'function') {
+                        //function
+                        asText += obj.toString();
+                    } else if (obj instanceof Date) {
+                        asText += 'new Date("' + obj.toJSON() + '")';
+                    } else if (typeof obj === 'object') {
+                        asText += '{';
+                        lineSeparator(1);
+                        Object.keys(obj).forEach(function(prop, index, array) {
+                            asText += JSON.stringify(prop) + ': ';
+                            recurseObject(obj[prop]);
+                            lineSeparator(0, index !== array.length - 1);
+                        });
+                        asText += '}';
+                    } else if (['boolean', 'number', 'string'].indexOf(typeof obj) > -1) {
+                        asText += JSON.stringify(obj);
+                    } else {
+                        console.log('Didn\'t handle: typeof obj:', typeof obj, '::  obj:', obj);
+                    }
+                }
+                recurseObject(args);
+                return asText;
+            }
+            var newScript = document.createElement('script');
+            if (typeof id === 'string' && id) {
+                newScript.id = id;
+            }
+            var args = [];
+            //Using .slice(), or other Array methods, on arguments prevents optimization.
+            for (var index = 3; index < arguments.length; index++) {
+                args.push(arguments[index]);
+            }
+            newScript.textContent = '(' + functionToRunInPage.toString() + ').apply(null,' +
+                convertToText(args) + ');';
+            (document.head || document.documentElement).appendChild(newScript);
+            if (!leaveInPage) {
+                //Synchronous scripts are executed immediately and can be immediately removed.
+                //Scripts with asynchronous functionality *may* need to remain in the page
+                //  until complete. Exactly what's needed depends on actual usage.
+                document.head.removeChild(newScript);
+            }
+            return newScript;
+        }
+
+        function addRoombaIfNone() {
+            if (!document.getElementById('roombaFieldRow')) {
+                addOrUpdateRoomba();
+                if (isMagicTag) {
+                    //If this is a version of MagicTag that doesn't show answers, then we need to use the API.
+                    mustUseAPI = document.querySelector('.review-answers') ? mustUseAPI : false;
+                    addVoteEvents();
+                }
+            }
+        }
+
+        function addVoteEvents() {
+            //Update the roomba if the user clicks on a question vote.
+            //There are only two possible question votes so put the event listener directly on those.
+            document.querySelector('#question a.vote-up-off').addEventListener('click', delayUpdateRoomba);
+            document.querySelector('#question a.vote-down-off').addEventListener('click', delayUpdateRoomba);
+            //Update the roomba if the user clicks on an answer vote.
+            document.querySelector('#answers').addEventListener('click', updateRoombaIfClickIsVote);
+        }
+
+        function mainAjaxEventReceived(event) {
+            const url = event.detail;
+            if (/realtime/.test(url)) {
+                if (config.scrapePage && !mustUseAPI) {
+                    //Don't update if the source is the API
+                    addOrUpdateRoomba();
+                    addVoteEvents();
+                }
+            }
+        }
+
+        if (isCloseReview) {
+            executeInPage(inPageDetectAjaxComplete, true, 'roombaForecaster-AJAX-listener');
+            //In the Close Vote Review Queue we must use the SE API, so only add it, don't update.
+            window.addEventListener('roombaForecaster-jQueryAJAX-complete', addRoombaIfNone);
+        }
+
+        if (isMagicTag) {
+            window.addEventListener('magicTagReview-questionFullyDisplayed', () => {
+                //Delay until after MagicTag processing. Could actually watch for the specific changes,
+                //  but this is sufficient, if potentially delayed slightly.
+                setTimeout(addRoombaIfNone, 100);
+                setTimeout(addRoombaIfNone, 1000);
+            });
+        }
+
         if (!document.getElementById('qinfo')) {
-            //Exit. Don't setup the Roomba Forecaster. The page does not have the question info
-            //  table into which a line is to be placed. Generally, the issue of executing on a
-            //  page where the table does not exist should be solved by changing the @includes
-            //  so the page does not qualify. But, this will catch any that were erroneously
-            //  included. In addition, this should handle an issue on Edge where the script is
-            //  executed a second time, in a new scope, on the same page, but in an environment
-            //  where the DOM is corrupted.
+            // Exit.  Don't setup the Roomba Forecaster.  We've already setup the
+            // non-question pages which are special cases.  For everything after this we're
+            // looking for the structure we'd normally find in a question page The page does
+            // not have the question info table into which a line is to be placed.
+            // Generally, the issue of executing on a page where the table does not exist
+            // should be solved by changing the @includes so the page does not qualify.
+            // But, this will catch any that were erroneously included.  In addition, this
+            // should handle an issue on Edge where the script is executed a second time, in
+            // a new scope, on the same page, but in an environment where the DOM is
+            // corrupted.
             return;
         }
 
         detectAndRemoveRoombaForecastChanges();
         //Add the Roomba display
         addOrUpdateRoomba();
-        //Update the roomba if the user clicks on a question vote.
-        //There are only two possible question votes so put the event listener directly on those.
-        document.querySelector('#question a.vote-up-off').addEventListener('click', delayUpdateRoomba);
-        document.querySelector('#question a.vote-down-off').addEventListener('click', delayUpdateRoomba);
-        //Update the roomba if the user clicks on an answer vote.
-        document.querySelector('#answers').addEventListener('click', updateRoombaIfClickIsVote);
+        addVoteEvents();
+        //This isn't going to work, unless it's limited to a subset of all AJAX calls.
+        executeInPage(inPageDetectAjaxComplete, true, 'roombaForecaster-AJAX-listener');
+        window.addEventListener('roombaForecaster-jQueryAJAX-complete', mainAjaxEventReceived);
     }
 
     function saveConfig() {
@@ -180,8 +356,8 @@
 
     function detectAndRemoveRoombaForecastChanges(last) {
         //Prevent there from being two "roomba" lines if both this script and
-        // RoombaForcast are installed.
-        var table = document.getElementById('qinfo');
+        // RoombaForecast are installed.
+        var table = getElementContainingRoombaTable();
         //loop through the table cells not added by this script looking for 'roomba'
         if (!asArray(table.querySelectorAll('td:not(#roombaFieldRowLabel)')).some(function(cell) {
             if (cell.textContent === 'roomba') {
@@ -252,7 +428,7 @@
         const DOWNVOTE_QUALIFIES_QUESTION = 0x1;
         const DOWNVOTE_QUALIFIES_ANSWER = 0x2;
 
-        var getRequestJson = config.scrapePage ? fakeAPIByScraping : XHR;
+        var getRequestJson = (config.scrapePage && !mustUseAPI) ? fakeAPIByScraping : XHR;
 
         //Define the Roombas
         var roombas = [];
@@ -271,6 +447,7 @@
             headerText: 'Closed&nbsp;>9&nbsp;Days',
             headerTextShort: 'Closed&nbsp;>9&nbsp;D',
             shortReasonPrefix: 'Cl',
+            downvoteText: '(closed)',
             frequency: 'daily',
             criteria: {
                 maxScore: 0,
@@ -292,6 +469,7 @@
             headerText: '>&nbsp;30&nbsp;Days',
             headerTextShort: '>&nbsp;30&nbsp;Days',
             shortReasonPrefix: '30',
+            downvoteText: '(30-day)',
             frequency: 'weekly',
             criteria: {
                 isLocked: false,
@@ -311,6 +489,7 @@
             headerText: '>&nbsp;365&nbsp;Days',
             headerTextShort: '>&nbsp;365&nbsp;Days',
             shortReasonPrefix: '365',
+            downvoteText: '(365-day)',
             frequency: 'weekly',
             criteria: {
                 isLocked: false,
@@ -319,6 +498,7 @@
                 maxAnswers: 0,
                 ageToViewMultiplier: 1.5,
                 maxComments: 1,
+                isMeta: false,
                 time: {
                     age: 365,
                 },
@@ -347,6 +527,9 @@
         }
 
         function getQuestionId() {
+            if (isCloseReview) {
+                return document.querySelector('.question').dataset.questionid;
+            }
             return document.getElementById('question').dataset.questionid;
         }
 
@@ -411,7 +594,7 @@
                     question.last_edit_date = elementTooltipTextAsDateSeconds(lastEditDateEl);
                 }
                 //answers
-                //  This assumes that if there are any positive scoring answers they are visible on this page. There is a unlikely case
+                //  This assumes that if there are any positive scoring answers they are visible on this page. There is an unlikely case
                 //  where the user is showing Answers by oldest first and there are enough old, down-voted answers to fill the first
                 //  page of answers.
                 var answers = [];
@@ -475,6 +658,15 @@
                 if (question.creation_date === '') {
                     question.creation_date = elementTooltipTextAsDateSeconds(findElementWithMatchingText('#qinfo p.label-key', /(ago|today)/));
                 }
+                if (isMagicTag) {
+                    question.view_count = +getRestOfTextWithMatchingText('.review-information .review-info', 'View count:').trim();
+                    if (question.creation_date === '') {
+                        question.creation_date = elementTooltipTextAsDateSeconds(findElementWithMatchingText('.review-information .review-info', /Creation date:/));
+                    }
+                    if (question.last_edit_date === '') {
+                        question.last_edit_date = elementTooltipTextAsDateSeconds(findElementWithMatchingText('.review-information .review-info', /Last edit date:/));
+                    }
+                }
                 if (!isDeleted) {
                     //The API does not return any question data for deleted questions.
                     return question;
@@ -500,31 +692,57 @@
 
         function addRoombaField() {
             //Create the basics of the 'qinfo' table row which shows Roomba information.
-            var table = document.getElementById('qinfo');
+            var table = getElementContainingRoombaTable();
             if (!table) {
                 //Detect a bug/corruption in Microsoft Edge with Tampermonkey where the script is run twice, but the second
                 //  time the document does not contain the elements we need. This is handled
                 //  by detecting that the qinfo table does not appear to exist, and aborting.
                 return 'ABORT';
             }
-            var row = table.insertRow();
-            var labelCell = row.insertCell();
-            var roombaAnchor = labelCell.appendChild(document.createElement('A'));
-            var label = roombaAnchor.appendChild(document.createElement('p'));
-            var valueCell = row.insertCell();
-            var value = valueCell.appendChild(document.createElement('p'));
-            var field = value.appendChild(document.createElement('a'));
-            label.className = value.className = 'label-key';
-            row.classList.add('roombaTooltip');
-            row.id = 'roombaFieldRow';
-            label.textContent = 'roomba';
-            labelCell.id = 'roombaFieldRowLabel';
-            //SE applies padding-left to each value cell in the style attribute. Thus, that is duplicated here.
-            valueCell.style.paddingLeft = '10px';
-            field.id = 'roombaField';
-            field.classList.add('roombaLinkInherit');
-            field.textContent = '...';
-            return field.id;
+            let fieldRowHtml = '' +
+                '<tr class="roombaTooltip" id="roombaFieldRow">' +
+                '    <td id="roombaFieldRowLabel">' +
+                '        <a>' +
+                '            <p class="label-key">roomba</p>' +
+                '        </a>' +
+                '    </td>' +
+                //SE applies padding-left to each value cell in the style attribute. Thus, that is duplicated here.
+                '    <td style="padding-left: 10px;">' +
+                '        <p class="label-key">' +
+                '            <a id="roombaField" class="roombaLinkInherit">...</a>' +
+                '        </p>' +
+                '    </td>' +
+                '</tr>' +
+                '';
+            const tbody = table.querySelector('tbody');
+            if (isCloseReview) {
+                fieldRowHtml = '' +
+                    '<tr class="roombaTooltip" id="roombaFieldRow">' +
+                    '    <td id="roombaFieldRowLabel" class="label-key">' +
+                    '        <span>roomba</span>' +
+                    '    </td>' +
+                    '    <td class="label-value">' +
+                    '        <span id="roombaField" class="roombaLinkInherit">...</span>' +
+                    '    </td>' +
+                    '</tr>' +
+                    '';
+                let after = tbody.firstChild;
+                while (after.nextElementSibling && after.nextElementSibling.textContent.trim()) {
+                    after = after.nextElementSibling;
+                }
+                after.insertAdjacentHTML('afterend', fieldRowHtml);
+            } else if (isMagicTag) {
+                fieldRowHtml = '' +
+                    '<div class="spacer review-info roombaTooltip" id="roombaFieldRow">' +
+                    '    <label class="left" id="roombaFieldRowLabel">roomba:</label>' +
+                    '    <span class="right" id="roombaField">...</span>' +
+                    '</div>' +
+                    '';
+                table.insertAdjacentHTML('beforeend', fieldRowHtml);
+            } else {
+                tbody.insertAdjacentHTML('beforeend', fieldRowHtml);
+            }
+            return 'roombaField';
         }
 
         function hideShortRoombaStatusIfConfigured() {
@@ -585,7 +803,7 @@
         function insertStyles() {
             //Add the Roomba Forecaster styles to the DOM.
             const styleEl = document.createElement('style');
-            const sidebarWidth = document.getElementById('sidebar').getBoundingClientRect().width;
+            const sidebarWidth = document.querySelector(sidebarSelector).getBoundingClientRect().width;
 
             styleEl.id = 'roombaStyle';
             styleEl.setAttribute('type', 'text/css');
@@ -679,6 +897,7 @@
             var cssShortStatus = '' +
                 '#roombaTableShort td, #roombaTableShort th {\n' +
                 '    vertical-align: text-top;\n' +
+                '    padding: 0;\n' +
                 '}\n' +
                 '#roombaTableShort .roombaReasonsCell {\n' +
                 '    padding-left:10px;\n' +
@@ -712,7 +931,7 @@
                 '    padding-left:2em;\n' +
                 '}\n' +
                 '#roombaOptionsDiv {\n' +
-                '    width:100%;\n' +
+                '    width:300px;\n' +
                 '    position:relative;\n' +
                 '}\n' +
                 '#roombaOptionsAbsoluteDiv {\n' +
@@ -742,7 +961,7 @@
                 '}\n' +
                 '#roombaOptionsButtonDiv button {\n' +
                 '    margin-right:1em;\n' +
-                '    margin-left:1em;\n' +
+                '    margin-left:.8em;\n' +
                 '}\n' +
                 '.roombaOptionsWarning {\n' +
                 '    text-align:center;\n' +
@@ -768,8 +987,36 @@
                 '.roombaSmallText {\n' +
                 '    font-size: 10px;\n' +
                 '}\n' +
+                '#roombaField,\n' +
+                '#roombaFieldRowLabel {\n' +
+                '    cursor: pointer;\n' +
+                '}\n' +
+                '#roombaFieldRow {\n' +
+                '    min-height: 9px;\n' +
+                '}\n' +
                 '';
-            var cssToUse = cssRoombaTable + cssShortStatus + cssToolTip + cssOptions + cssBase;
+            var cssMagicTag = '' +
+                '.review-information #roombaField.right {\n' +
+                '    max-width: 160px;\n' +
+                '}\n' +
+                '.review-information #roombaFieldRow {\n' +
+                '    overflow: visible;\n' +
+                '}\n' +
+                '.review-information #roombaTableDivDiv {' +
+                '    width: 310px;' +
+                '}' +
+                '.review-information .roombaTooltipText {' +
+                '    left: -40px;' +
+                '    top: 3em;' +
+                '}' +
+                '.review-information #roombaTableDivDiv {' +
+                '    font-weight: initial;' +
+                '}' +
+                '.review-information #roombaTableShort b {' +
+                '    font-weight: normal;' +
+                '}' +
+                '';
+            var cssToUse = cssRoombaTable + cssShortStatus + cssToolTip + cssOptions + cssBase + cssMagicTag;
             if (isFirefox) {
                 cssToUse += cssFirefox;
             } else if (isEdge) {
@@ -792,7 +1039,6 @@
         }
         insertStyles();
         hideShortRoombaStatusIfConfigured(); //Don't show the short status
-        var beforeRoombaTableId = 'qinfo';
 
         //Get the question data from either the API or scraping the page.
         getRequestJson('GET', 'https://api.stackexchange.com/2.2/questions/' + getQuestionId() + '?site=' + location.hostname + '&filter=' + FILTER_ID + '&key=' + API_KEY, null, function(response) {
@@ -802,6 +1048,7 @@
             var minRoombaDays = 999;
             var roombaFrequency = '';
             var downvoteWillQualify = 0; //Used as a bit field with values: 0, 1, 2, 3
+            const downvoteWillQualifyByRoomba = {}; //Used as a bit field for each Roomba with values: 0, 1, 2, 3
 
             function getDaysText(days) {
                 //Handle pluralizing 'day'
@@ -865,7 +1112,7 @@
                     } //else
                     var override = false;
                     if ((getNowDay() - question.closedDay) < 16) {
-                        //This question: http://softwareengineering.stackexchange.com/q/122569/151503 meets all of the stated criteria, but has not
+                        //This question: https://softwareengineering.stackexchange.com/q/122569/151503 meets all of the stated criteria, but has not
                         //  been deleted in many years. Thus, there are some unstated criteria. The unstated criteria which allow a question to remain
                         //  undeleted are handled by checking if there has been enough time for the weekly Roomba to have deleted the question, twice.
                         //  If that is the case, then it is assumed that the Roomba will never delete it.
@@ -1040,6 +1287,7 @@
                             hasReopenVotes: 'boolean',
                             ageToViewMultiplier: 'number',
                             maxComments: 'number',
+                            isMeta: 'boolean',
                             time: 'object',
                         };
                         Object.keys(criteria).forEach(function(checkCriteria) {
@@ -1118,6 +1366,9 @@
                     //Too many comments
                     addReasonsQuestionAboveNumericCriteria('maxComments', question.comment_count, 'comment', 'Co', true, true);
 
+                    //Not on Meta
+                    addReasonsBooleanCriteria('isMeta', isMeta, 'is meta site', 'Me', true);
+
                     //Prepare return value based on question and answer downvote qualifications.
                     var returnValue = 0;
                     if (theRoomba.reasons.length === 1) {
@@ -1162,7 +1413,7 @@
                     roombaTableHtml += '<th>' + headerText + '</th>';
                 });
                 roombaTableHtml += '</tr></tbody></table></a></div></div>';
-                document.getElementById(beforeRoombaTableId).insertAdjacentHTML('afterend', roombaTableHtml);
+                getElementContainingRoombaTable().insertAdjacentHTML('afterend', roombaTableHtml);
                 var table = document.getElementById('roombaTable');
                 var caption = table.createCaption();
                 var daysQual;
@@ -1181,16 +1432,20 @@
                 });
             }
 
-            function populateRoombaField(downvoteQualifies, thisMinRoombaDays, thisRoombaFrequency) {
+            function populateRoombaField(downvoteQualifies, downvoteQualifiesByRoomba, thisMinRoombaDays, thisRoombaFrequency) {
                 //Insert the small table with values into the roombaField
                 function afterWindowLoad() {
                     //Tasks that need to happen after the window.onload event.
+                    //  The indicators that the user has voted are not available when we first run. We have
+                    //  to check for them after they are available.
                     //  Hide the text stating that downvoting the question will Roomba if
                     //  the user has already downvoted.
                     if (document.querySelector('#question a.vote-down-off.vote-down-on')) {
+                        //The question has already been downvoted by the user.
                         const downQualsSpan = document.getElementById('roombaDownVoteQualifies');
-                        downQualsSpan.textContent = downQualsSpan.textContent.replace(/question &?/, '');
-                        if (downQualsSpan.textContent === 'down-vote will roomba') {
+                        if (downQualsSpan && /question/.test(downQualsSpan.textContent)) {
+                            //If the user would need to downvote the question to make it Roomba,
+                            //  but has already done so, then the user can't make it Roomba.
                             downQualsSpan.textContent = '';
                         }
                     }
@@ -1241,6 +1496,13 @@
                         //XXX Should add notification that a downvote will roomba sooner. This is the case when
                         //  qualified for 365 day roomba (0 score), but not qualified for 30 day roomba (-1 score).
                         downvoteText = 'down-vote ' + downvoteText + ' will roomba';
+                        roombas.some(function(roomba) {
+                            if (downvoteQualifiesByRoomba[roomba.shortReasonPrefix]) {
+                                downvoteText += ' ' + roomba.downvoteText;
+                                return true;
+                            }
+                            return false;
+                        });
                     }
                     if (shortReasons && downvoteText) {
                         shortReasons += ' ';
@@ -1256,7 +1518,12 @@
 
             function insertRoombaForecasterOptionsDialog() {
                 //Add the options dialog to the DOM along with event listeners to control it.
-                var qinfo = document.getElementById('qinfo');
+                var qinfo = getElementContainingRoombaTable();
+                if (isMagicTag) {
+                    //For MagicTag, the options div should be immediately inside the .review-sidebar container,
+                    // not two levels up.
+                    qinfo = qinfo.firstChild;
+                }
                 qinfo.parentNode.insertAdjacentHTML('beforebegin', '' +
                     '<div id="roombaOptionsDiv">' +
                     '    <div id="roombaOptionsAbsoluteDiv">' +
@@ -1314,7 +1581,15 @@
             }
 
             function getEffectiveColor(element, styleText, defaultValue) {
-                defaultValue = defaultValue ? defaultValue : 'white';
+                //Does not consider potential background images.
+                //Does not handle finding the actual color when there's partial transparency.
+                if (!defaultValue) {
+                    if (styleText.indexOf('background') > -1) {
+                        defaultValue = 'white';
+                    } else {
+                        defaultValue = 'black';
+                    }
+                }
                 return getEffectiveStyleValue(element, styleText, /(?:transparent|initial|inherit|currentColor|unset|rgba.*,\s*0+(?:\.\d*)?\s*\))/i, defaultValue);
             }
 
@@ -1393,7 +1668,7 @@
                 optionsAbsDiv.style.display = 'block';
                 optionsAbsDiv.style.opacity = 1;
                 optionsAbsDiv.style.pointerEvents = 'auto';
-                document.getElementById('sidebar').classList.add('roombaShowOverflow');
+                document.querySelector(sidebarSelector).classList.add('roombaShowOverflow');
                 //Add window click handler to hide the options, not using capture. Most valid clicks will
                 //  have the event canceled.
                 window.addEventListener('click', windowClickWhileOptionsShown, false);
@@ -1427,7 +1702,7 @@
                     return;
                 }
                 if (+optionsAbsDiv.style.opacity === 0) {
-                    document.getElementById('sidebar').classList.remove('roombaShowOverflow');
+                    document.querySelector(sidebarSelector).classList.remove('roombaShowOverflow');
                     optionsAbsDiv.style.display = 'none';
                     optionsDiv.style.display = 'none';
                 }
@@ -1533,7 +1808,7 @@
                 removeRoombaFieldRowIfExists();
                 addRoombaField();
                 insertLargeRoombaTable(areShortTableHeadersNeeded(), minRoombaDays, roombaFrequency);
-                populateRoombaField(downvoteWillQualify, minRoombaDays, roombaFrequency);
+                populateRoombaField(downvoteWillQualify, downvoteWillQualifyByRoomba, minRoombaDays, roombaFrequency);
                 adjustDocumentToObject(obj);
                 addDisplayOptionsClickListeners();
             }
@@ -1570,7 +1845,7 @@
                     roombaTableDivDiv.classList.add('roombaTooltipText');
                     roombaTableDiv.classList.add('roombaTooltipTextPositionDiv');
                     //Move the Roomba table to be the first child of the first td inside the row the .roombaTooltip class is on.
-                    var tooltipTd = document.querySelector('.roombaTooltip td');
+                    var tooltipTd = document.querySelector('#roombaFieldRowLabel');
                     tooltipTd.insertBefore(roombaTableDiv, tooltipTd.firstChild);
                 } else if (!obj.alwaysShowRoombaTable) {
                     //Don't show the Roomba Table. Only apply this if not a tooltip.
@@ -1578,9 +1853,13 @@
                 }
                 if (!obj.showShortReasons) {
                     //Don't show the short reasons.
-                    var reasonsCell = document.querySelector('#roombaShortReasonsSpan');
+                    const reasonsCell = document.querySelector('#roombaShortReasonsSpan');
                     if (reasonsCell) {
                         reasonsCell.style.display = 'none';
+                        const reasonsCellParent = reasonsCell.parentElement;
+                        if (reasonsCellParent.classList.contains('roombaReasonsCell') && reasonsCellParent.innerText.trim() === '') {
+                            reasonsCellParent.style.display = 'none';
+                        }
                     }
                 }
                 if (!obj.showIfDownvoteWillRoomba) {
@@ -1615,13 +1894,13 @@
 
             //Begin processing the response
 
-            if (!config.scrapePage) {
+            if (!config.scrapePage || mustUseAPI) {
                 //Handle some possible conditions with the API.
                 if (data.quota_remaining < 1000) {
                     //Report in the console that the number of remaining requests is limited.
                     console.log('Quota remaining:', data.quota_remaining);
                 }
-                if (!question && (data.quota_remaining < 10 || data.backoff || data.error_id)) {
+                if (!mustUseAPI && !question && (data.quota_remaining < 10 || data.backoff || data.error_id)) {
                     //Start using page scraping if:
                     //  The API quota is nearly consumed.
                     //  The API indicated we should back-off.
@@ -1647,7 +1926,9 @@
             //Test the question for each Roomba. Track if the user downvoting can affect the Roomba status.
             downvoteWillQualify = 0; //Used as a bit field with values: 0,1,2,3
             roombas.forEach(function(curRoomba) {
-                downvoteWillQualify |= testCriteriaAndMakeHtml(curRoomba); // eslint-disable-line no-bitwise
+                const currentResult = testCriteriaAndMakeHtml(curRoomba);
+                downvoteWillQualifyByRoomba[curRoomba.shortReasonPrefix] = currentResult;
+                downvoteWillQualify |= currentResult; // eslint-disable-line no-bitwise
             });
 
             //Get the minimum number of days to a Roomba and the frequency.
@@ -1664,7 +1945,7 @@
 
             //Insert the rest of the Roomba Forecaster UI into the DOM.
             insertLargeRoombaTable(areShortTableHeadersNeeded(), minRoombaDays, roombaFrequency);
-            populateRoombaField(downvoteWillQualify, minRoombaDays, roombaFrequency);
+            populateRoombaField(downvoteWillQualify, downvoteWillQualifyByRoomba, minRoombaDays, roombaFrequency);
             insertRoombaForecasterOptionsDialog();
             adjustDocumentToConfig();
         });
