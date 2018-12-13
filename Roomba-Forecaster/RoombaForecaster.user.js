@@ -88,6 +88,7 @@
     const isBlink = (isChrome || isOpera) && !!window.CSS;
 
     const configKeys = Object.keys(config);
+    const isMeta = /(?:^|\.)meta\./.test(window.location.hostname);
     var configSaveWorking = true;
     restoreConfig().then(afterRestoreConfig, afterRestoreConfig);
 
@@ -319,6 +320,7 @@
                 maxAnswers: 0,
                 ageToViewMultiplier: 1.5,
                 maxComments: 1,
+                isMeta: false,
                 time: {
                     age: 365,
                 },
@@ -1040,6 +1042,7 @@
                             hasReopenVotes: 'boolean',
                             ageToViewMultiplier: 'number',
                             maxComments: 'number',
+                            isMeta: 'boolean',
                             time: 'object',
                         };
                         Object.keys(criteria).forEach(function(checkCriteria) {
@@ -1117,6 +1120,9 @@
 
                     //Too many comments
                     addReasonsQuestionAboveNumericCriteria('maxComments', question.comment_count, 'comment', 'Co', true, true);
+
+                    //Not on Meta
+                    addReasonsBooleanCriteria('isMeta', isMeta, 'is meta site', 'Me', true);
 
                     //Prepare return value based on question and answer downvote qualifications.
                     var returnValue = 0;
