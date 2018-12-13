@@ -272,6 +272,7 @@
             headerText: 'Closed&nbsp;>9&nbsp;Days',
             headerTextShort: 'Closed&nbsp;>9&nbsp;D',
             shortReasonPrefix: 'Cl',
+            downvoteText: '(closed)',
             frequency: 'daily',
             criteria: {
                 maxScore: 0,
@@ -293,6 +294,7 @@
             headerText: '>&nbsp;30&nbsp;Days',
             headerTextShort: '>&nbsp;30&nbsp;Days',
             shortReasonPrefix: '30',
+            downvoteText: '(30-day)',
             frequency: 'weekly',
             criteria: {
                 isLocked: false,
@@ -312,6 +314,7 @@
             headerText: '>&nbsp;365&nbsp;Days',
             headerTextShort: '>&nbsp;365&nbsp;Days',
             shortReasonPrefix: '365',
+            downvoteText: '(365-day)',
             frequency: 'weekly',
             criteria: {
                 isLocked: false,
@@ -804,6 +807,7 @@
             var minRoombaDays = 999;
             var roombaFrequency = '';
             var downvoteWillQualify = 0; //Used as a bit field with values: 0, 1, 2, 3
+            const downvoteWillQualifyByRoomba = {}; //Used as a bit field for each Roomba with values: 0, 1, 2, 3
 
             function getDaysText(days) {
                 //Handle pluralizing 'day'
@@ -1187,16 +1191,20 @@
                 });
             }
 
-            function populateRoombaField(downvoteQualifies, thisMinRoombaDays, thisRoombaFrequency) {
+            function populateRoombaField(downvoteQualifies, downvoteQualifiesByRoomba, thisMinRoombaDays, thisRoombaFrequency) {
                 //Insert the small table with values into the roombaField
                 function afterWindowLoad() {
                     //Tasks that need to happen after the window.onload event.
+                    //  The indicators that the user has voted are not available when we first run. We have
+                    //  to check for them after they are available.
                     //  Hide the text stating that downvoting the question will Roomba if
                     //  the user has already downvoted.
                     if (document.querySelector('#question a.vote-down-off.vote-down-on')) {
+                        //The question has already been downvoted by the user.
                         const downQualsSpan = document.getElementById('roombaDownVoteQualifies');
-                        downQualsSpan.textContent = downQualsSpan.textContent.replace(/question &?/, '');
-                        if (downQualsSpan.textContent === 'down-vote will roomba') {
+                        if (downQualsSpan && /question/.test(downQualsSpan.textContent)) {
+                            //If the user would need to downvote the question to make it Roomba,
+                            //  but has already done so, then the user can't make it Roomba.
                             downQualsSpan.textContent = '';
                         }
                     }
@@ -1247,6 +1255,13 @@
                         //XXX Should add notification that a downvote will roomba sooner. This is the case when
                         //  qualified for 365 day roomba (0 score), but not qualified for 30 day roomba (-1 score).
                         downvoteText = 'down-vote ' + downvoteText + ' will roomba';
+                        roombas.some(function(roomba) {
+                            if (downvoteQualifiesByRoomba[roomba.shortReasonPrefix]) {
+                                downvoteText += ' ' + roomba.downvoteText;
+                                return true;
+                            }
+                            return false;
+                        });
                     }
                     if (shortReasons && downvoteText) {
                         shortReasons += ' ';
@@ -1539,7 +1554,7 @@
                 removeRoombaFieldRowIfExists();
                 addRoombaField();
                 insertLargeRoombaTable(areShortTableHeadersNeeded(), minRoombaDays, roombaFrequency);
-                populateRoombaField(downvoteWillQualify, minRoombaDays, roombaFrequency);
+                populateRoombaField(downvoteWillQualify, downvoteWillQualifyByRoomba, minRoombaDays, roombaFrequency);
                 adjustDocumentToObject(obj);
                 addDisplayOptionsClickListeners();
             }
@@ -1653,7 +1668,9 @@
             //Test the question for each Roomba. Track if the user downvoting can affect the Roomba status.
             downvoteWillQualify = 0; //Used as a bit field with values: 0,1,2,3
             roombas.forEach(function(curRoomba) {
-                downvoteWillQualify |= testCriteriaAndMakeHtml(curRoomba); // eslint-disable-line no-bitwise
+                const currentResult = testCriteriaAndMakeHtml(curRoomba);
+                downvoteWillQualifyByRoomba[curRoomba.shortReasonPrefix] = currentResult;
+                downvoteWillQualify |= currentResult; // eslint-disable-line no-bitwise
             });
 
             //Get the minimum number of days to a Roomba and the frequency.
@@ -1670,7 +1687,7 @@
 
             //Insert the rest of the Roomba Forecaster UI into the DOM.
             insertLargeRoombaTable(areShortTableHeadersNeeded(), minRoombaDays, roombaFrequency);
-            populateRoombaField(downvoteWillQualify, minRoombaDays, roombaFrequency);
+            populateRoombaField(downvoteWillQualify, downvoteWillQualifyByRoomba, minRoombaDays, roombaFrequency);
             insertRoombaForecasterOptionsDialog();
             adjustDocumentToConfig();
         });
