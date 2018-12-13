@@ -89,6 +89,14 @@
 
     const configKeys = Object.keys(config);
     const isMeta = /(?:^|\.)meta\./.test(window.location.hostname);
+    const sitesMustUseAPI = [].concat.apply([], [
+        'pt.stackoverflow.com',
+        'es.stackoverflow.com',
+        'ru.stackoverflow.com',
+        'ja.stackoverflow.com',
+        'rus.stackexchange.com',
+    ].map((site) => [site, site.replace(/\./, '.meta.')]));
+    const mustUseAPI = sitesMustUseAPI.indexOf(window.location.hostname) > -1;
     var configSaveWorking = true;
     restoreConfig().then(afterRestoreConfig, afterRestoreConfig);
 
@@ -105,7 +113,7 @@
     function setup() {
         function delayUpdateRoomba() {
             //Allow some time for the API to process the vote.
-            setTimeout(addOrUpdateRoomba, config.scrapePage ? 250 : 2000);
+            setTimeout(addOrUpdateRoomba, (config.scrapePage && !mustUseAPI) ? 250 : 2000);
         }
 
         function updateRoombaIfClickIsVote(event) {
@@ -253,7 +261,7 @@
         const DOWNVOTE_QUALIFIES_QUESTION = 0x1;
         const DOWNVOTE_QUALIFIES_ANSWER = 0x2;
 
-        var getRequestJson = config.scrapePage ? fakeAPIByScraping : XHR;
+        var getRequestJson = (config.scrapePage && !mustUseAPI) ? fakeAPIByScraping : XHR;
 
         //Define the Roombas
         var roombas = [];
@@ -1636,13 +1644,13 @@
 
             //Begin processing the response
 
-            if (!config.scrapePage) {
+            if (!config.scrapePage || mustUseAPI) {
                 //Handle some possible conditions with the API.
                 if (data.quota_remaining < 1000) {
                     //Report in the console that the number of remaining requests is limited.
                     console.log('Quota remaining:', data.quota_remaining);
                 }
-                if (!question && (data.quota_remaining < 10 || data.backoff || data.error_id)) {
+                if (!mustUseAPI && !question && (data.quota_remaining < 10 || data.backoff || data.error_id)) {
                     //Start using page scraping if:
                     //  The API quota is nearly consumed.
                     //  The API indicated we should back-off.
