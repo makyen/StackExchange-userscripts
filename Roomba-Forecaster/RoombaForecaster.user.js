@@ -2,7 +2,7 @@
 // @name         Roomba Forecaster
 // @author       Makyen
 // @author       Siguza
-// @version      2.1.0
+// @version      2.1.1
 // @description  Is Roomba going to delete the question? If not, why? If so, when?
 // @namespace    makyen-RoombaForecaster
 // @homepage     https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster
