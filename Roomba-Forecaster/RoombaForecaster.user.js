@@ -126,7 +126,7 @@
 
         function updateRoombaIfClickIsVote(event) {
             var target = event.target;
-            if (target.nodeName === 'A' && (target.classList.contains('vote-up-off') || target.classList.contains('vote-down-off'))) {
+            if (target.classList.contains('js-vote-up-btn') || target.classList.contains('js-vote-down-btn')) {
                 delayUpdateRoomba();
             }
         }
@@ -256,8 +256,8 @@
         function addVoteEvents() {
             //Update the roomba if the user clicks on a question vote.
             //There are only two possible question votes so put the event listener directly on those.
-            document.querySelector('#question a.vote-up-off').addEventListener('click', delayUpdateRoomba);
-            document.querySelector('#question a.vote-down-off').addEventListener('click', delayUpdateRoomba);
+            document.querySelector('#question .js-vote-up-btn').addEventListener('click', delayUpdateRoomba);
+            document.querySelector('#question .js-vote-down-btn').addEventListener('click', delayUpdateRoomba);
             //Update the roomba if the user clicks on an answer vote.
             document.querySelector('#answers').addEventListener('click', updateRoombaIfClickIsVote);
         }
@@ -568,7 +568,7 @@
                 //Scraping the page for question information.
                 //  Matches the JSON returned by the API for the data which is used by Roomba Forecaster.
                 var question = {
-                    score: +document.querySelector('#question span.vote-count-post').textContent,
+                    score: +document.querySelector('#question .votecell .js-vote-count').textContent,
                     creation_date: elementTooltipTextAsDateSeconds(document.querySelector('#question .post-signature.owner .relativetime')),
                     owner: {
                         user_type: document.querySelector('#question .owner .user-details a') ? 'valid' : 'does_not_exist', // 'does_not_exist' if not exist
@@ -598,7 +598,7 @@
                 //  where the user is showing Answers by oldest first and there are enough old, down-voted answers to fill the first
                 //  page of answers.
                 var answers = [];
-                asArray(document.querySelectorAll('#answers div.answer:not(.deleted-answer) span.vote-count-post')).forEach(function(el) {
+                asArray(document.querySelectorAll('#answers div.answer:not(.deleted-answer) .js-vote-count')).forEach(function(el) {
                     answers.push({score: el.textContent});
                 });
                 if (answers.length > 0) {
@@ -1440,7 +1440,7 @@
                     //  to check for them after they are available.
                     //  Hide the text stating that downvoting the question will Roomba if
                     //  the user has already downvoted.
-                    if (document.querySelector('#question a.vote-down-off.vote-down-on')) {
+                    if (document.querySelector('#question .js-vote-down-btn.fc-theme-primary')) {
                         //The question has already been downvoted by the user.
                         const downQualsSpan = document.getElementById('roombaDownVoteQualifies');
                         if (downQualsSpan && /question/.test(downQualsSpan.textContent)) {
