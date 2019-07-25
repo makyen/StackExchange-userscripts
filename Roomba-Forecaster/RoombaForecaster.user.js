@@ -293,12 +293,12 @@
         if (!document.getElementById('qinfo')) {
             // Exit.  Don't setup the Roomba Forecaster.  We've already setup the
             // non-question pages which are special cases.  For everything after this we're
-            // looking for the structure we'd normally find in a question page The page does
+            // looking for the structure we'd normally find in a question page. The page does
             // not have the question info table into which a line is to be placed.
             // Generally, the issue of executing on a page where the table does not exist
             // should be solved by changing the @includes so the page does not qualify.
             // But, this will catch any that were erroneously included.  In addition, this
-            // should handle an issue on Edge where the script is executed a second time, in
+            // should handle an issue in Edge where the script is executed a second time, in
             // a new scope, on the same page, but in an environment where the DOM is
             // corrupted.
             return;
