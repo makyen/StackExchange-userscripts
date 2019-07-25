@@ -25,7 +25,7 @@
  *  https://github.com/Siguza/StackScripts/blob/master/RoombaForecast.user.js
  *  The portions of code retained from that source are:
  *    XHR()
- *    getQuestionId()
+ *    Portions of getQuestionId()
  *    Portions of addRoombaField()
  *    Most of the lines invoking the above functions.
  *    Some of the lines in the ==UserScript== block.
@@ -244,11 +244,13 @@
 
         function addRoombaIfNone() {
             if (!document.getElementById('roombaFieldRow')) {
-                addOrUpdateRoomba();
                 if (isMagicTag) {
                     //If this is a version of MagicTag that doesn't show answers, then we need to use the API.
                     mustUseAPI = document.querySelector('.review-answers') ? mustUseAPI : false;
+                    addOrUpdateRoomba();
                     addVoteEvents();
+                } else {
+                    addOrUpdateRoomba();
                 }
             }
         }
@@ -527,10 +529,13 @@
         }
 
         function getQuestionId() {
+            let question;
             if (isCloseReview) {
-                return document.querySelector('.question').dataset.questionid;
+                question = document.querySelector('.question');
+            } else {
+                question = document.getElementById('question');
             }
-            return document.getElementById('question').dataset.questionid;
+            return question ? question.dataset.questionid : null;
         }
 
         function fakeAPIByScraping(type, url, data, callback) {
@@ -1040,8 +1045,13 @@
         insertStyles();
         hideShortRoombaStatusIfConfigured(); //Don't show the short status
 
+        const questionId = getQuestionId();
+        if (!questionId) {
+            console.error('Roomba Forecaster: Did not find a valid question ID.');
+            return;
+        }
         //Get the question data from either the API or scraping the page.
-        getRequestJson('GET', 'https://api.stackexchange.com/2.2/questions/' + getQuestionId() + '?site=' + location.hostname + '&filter=' + FILTER_ID + '&key=' + API_KEY, null, function(response) {
+        getRequestJson('GET', 'https://api.stackexchange.com/2.2/questions/' + questionId + '?site=' + location.hostname + '&filter=' + FILTER_ID + '&key=' + API_KEY, null, function(response) {
             //The response has been received.
             var data = JSON.parse(response);
             var question = data.items[0];
