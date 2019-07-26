@@ -823,8 +823,8 @@
             var cssFirefox = '' +
                 //Match stock Firefox tooltips
                 '#roombaTableDivDiv.roombaTooltipText {\n' +
-                '    background-color: #FFFFE1;\n' +
-                '    border: 1px solid #8D8D7C;\n' +
+                '    background-color: #FEFEFE;\n' +
+                '    border: 1px solid #6E7276;\n' +
                 '}\n' +
                 '#roombaTable ul {\n' +
                 '    margin-right: -5px;\n' +
@@ -832,6 +832,12 @@
                 '}\n' +
                 '#roombaTable li span {\n' +
                 '    left:-4px;\n' +
+                '}\n' +
+                '#roombaTable .label-key,\n' +
+                '#roombaTable td,\n' +
+                '#roombaTable th,\n' +
+                '.roombaLinkInherit {\n' +
+                '    color: #3E4246;\n' +
                 '}\n' +
                 '';
             var cssEdge = '' +
