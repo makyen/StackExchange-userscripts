@@ -102,7 +102,6 @@
     ].map((site) => [site, site.replace(/\./, '.meta.')]));
     let mustUseAPI = sitesMustUseAPI.indexOf(window.location.hostname) > -1 || isCloseReview;
     let isViewsBelowTitle = false;
-    let usedSimplifiedNumberForViews = false;
     var configSaveWorking = true;
     restoreConfig().then(afterRestoreConfig, afterRestoreConfig);
 
@@ -634,7 +633,6 @@
                 if (!question.view_count) {
                     const viewSelector = isViewsBelowTitle ? '#question-header + div.grid > .grid--cell' : '#qinfo p.label-key';
                     question.view_count = getApproximateNumberFromSimplifiedNumberText(getRestOfTextWithMatchingText(viewSelector, 'times').replace(/viewed/i, '').trim());
-                    usedSimplifiedNumberForViews = true;
                 }
                 //last_edit_date
                 var lastEditDateEl = document.querySelector('#question .post-signature:not(.owner) div.user-action-time .relativetime');
@@ -743,7 +741,7 @@
 
         function addRoombaField() {
             //Create the basics of the 'qinfo' table row which shows Roomba information.
-            let table = getElementContainingRoombaTable();
+            const table = getElementContainingRoombaTable();
             if (!table) {
                 //Detect a bug/corruption in Microsoft Edge with Tampermonkey where the script is run twice, but the second
                 //  time the document does not contain the elements we need. This is handled
@@ -1398,7 +1396,7 @@
                             time: 'object',
                         };
                         Object.keys(criteria).forEach(function(checkCriteria) {
-                            if (!validCriteria.hasOwnProperty(checkCriteria)) {
+                            if (!({}).hasOwnProperty.call(validCriteria, checkCriteria)) {
                                 console.log('Invalid criteria: Unknown property:', checkCriteria, ' Roomba:', aRoomba);
                             } else {
                                 //All criteria must be numbers
@@ -1646,7 +1644,7 @@
                         where = 'beforebegin';
                     }
                 }
-                 intoElementChild.insertAdjacentHTML(where, '' +
+                intoElementChild.insertAdjacentHTML(where, '' +
                     '<div id="roombaOptionsDiv">' +
                     '    <div id="roombaOptionsAbsoluteDiv">' +
                     '        <div class="roombaOptionsTitle"><B>Roomba Forecaster Options</B></div>' +
