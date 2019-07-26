@@ -868,6 +868,12 @@
                 '#roombaTable li span {\n' +
                 '    left:-8px;\n' +
                 '}\n' +
+                '#roombaTable .label-key,\n' +
+                '#roombaTable td,\n' +
+                '#roombaTable th,\n' +
+                '.roombaLinkInherit {\n' +
+                '    color: #5E6266;\n' +
+                '}\n' +
                 '';
             var cssRoombaTable = '' +
                 '#roombaTable ul {\n' +
