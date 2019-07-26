@@ -91,7 +91,7 @@
     const isCloseReview = window.location.pathname.indexOf('/review/close/') === 0 || window.location.pathname === '/review/close';
     const isMagicTag = window.location.pathname.indexOf('/review/MagicTagReview') === 0;
     const isMeta = /(?:^|\.)meta\./.test(window.location.hostname);
-    const beforeRoombaTableSelector = '#qinfo, .reviewable-post-stats > table, .review-task .review-sidebar .review-information';
+    const beforeRoombaTableSelector = '#question-header + div.grid, #qinfo, .reviewable-post-stats > table, .review-task .review-sidebar .review-information';
     const sidebarSelector = '#sidebar, .sidebar, .review-task .review-sidebar';
     const sitesMustUseAPI = [].concat.apply([], [
         'pt.stackoverflow.com',
@@ -101,11 +101,13 @@
         'rus.stackexchange.com',
     ].map((site) => [site, site.replace(/\./, '.meta.')]));
     let mustUseAPI = sitesMustUseAPI.indexOf(window.location.hostname) > -1 || isCloseReview;
+    let isViewsBelowTitle = false;
+    let usedSimplifiedNumberForViews = false;
     var configSaveWorking = true;
     restoreConfig().then(afterRestoreConfig, afterRestoreConfig);
 
     function getElementContainingRoombaTable() {
-        return document.querySelector(beforeRoombaTableSelector);
+        return asArray(document.querySelectorAll(beforeRoombaTableSelector)).filter((element) => element.children.length > 0)[0];
     }
 
     function afterRestoreConfig() {
@@ -279,6 +281,18 @@
             }
         }
 
+        let observerReaddRFTimeout;
+
+        function underTitleObserver(mutations, observer) {
+            const firstQinfoCell = document.querySelector('#question-header + div.grid > .grid--cell');
+            if (!firstQinfoCell) {
+                isViewsBelowTitle = false;
+                observer.disconnect();
+                clearTimeout(observerReaddRFTimeout);
+                observerReaddRFTimeout = setTimeout(addRoombaIfNone, 50);
+            }
+        }
+
         if (isCloseReview) {
             executeInPage(inPageDetectAjaxComplete, true, 'roombaForecaster-AJAX-listener');
             //In the Close Vote Review Queue we must use the SE API, so only add it, don't update.
@@ -295,17 +309,26 @@
         }
 
         if (!document.getElementById('qinfo')) {
-            // Exit.  Don't setup the Roomba Forecaster.  We've already setup the
-            // non-question pages which are special cases.  For everything after this we're
-            // looking for the structure we'd normally find in a question page. The page does
-            // not have the question info table into which a line is to be placed.
-            // Generally, the issue of executing on a page where the table does not exist
-            // should be solved by changing the @includes so the page does not qualify.
-            // But, this will catch any that were erroneously included.  In addition, this
-            // should handle an issue in Edge where the script is executed a second time, in
-            // a new scope, on the same page, but in an environment where the DOM is
-            // corrupted.
-            return;
+            //Either this is the new SE HTML as of 2019-07-25, or we need to exit.
+            const underTitleContainer = document.querySelector('#question-header + div.grid');
+            if (underTitleContainer) {
+                //Looks like it's the new HTML (2019-07-25)
+                isViewsBelowTitle = true;
+                new MutationObserver(underTitleObserver).observe(underTitleContainer.parentNode, {childList: true});
+                new MutationObserver(underTitleObserver).observe(underTitleContainer, {childList: true});
+            } else {
+                // Exit.  Don't setup the Roomba Forecaster.  We've already setup the
+                // non-question pages which are special cases.  For everything after this we're
+                // looking for the structure we'd normally find in a question page. The page does
+                // not have the question info table into which a line is to be placed.
+                // Generally, the issue of executing on a page where the table does not exist
+                // should be solved by changing the @includes so the page does not qualify.
+                // But, this will catch any that were erroneously included.  In addition, this
+                // should handle an issue in Edge where the script is executed a second time, in
+                // a new scope, on the same page, but in an environment where the DOM is
+                // corrupted.
+                return;
+            }
         }
 
         detectAndRemoveRoombaForecastChanges();
@@ -573,6 +596,16 @@
                 return '';
             }
 
+            function getApproximateNumberFromSimplifiedNumberText(text) {
+                text = text.trim();
+                let multiplier = 1;
+                multiplier = text.endsWith('k') || text.endsWith('K') ? 1000 : multiplier;
+                multiplier = text.endsWith('m') || text.endsWith('M') ? 1000000 : multiplier;
+                multiplier = text.endsWith('g') || text.endsWith('G') ? 1000000000 : multiplier;
+                text = text.replace(/[kmg]/, '');
+                return +text * multiplier;
+            }
+
             function getQuestionDataFromPage() {
                 //Scraping the page for question information.
                 //  Matches the JSON returned by the API for the data which is used by Roomba Forecaster.
@@ -597,6 +630,12 @@
                     //migrated_from
                     //migrated_to
                 };
+                //views, if the text is the simplified number used under the question title as of 2019-07-25.
+                if (!question.view_count) {
+                    const viewSelector = isViewsBelowTitle ? '#question-header + div.grid > .grid--cell' : '#qinfo p.label-key';
+                    question.view_count = getApproximateNumberFromSimplifiedNumberText(getRestOfTextWithMatchingText(viewSelector, 'times').replace(/viewed/i, '').trim());
+                    usedSimplifiedNumberForViews = true;
+                }
                 //last_edit_date
                 var lastEditDateEl = document.querySelector('#question .post-signature:not(.owner) div.user-action-time .relativetime');
                 if (lastEditDateEl) {
@@ -704,7 +743,7 @@
 
         function addRoombaField() {
             //Create the basics of the 'qinfo' table row which shows Roomba information.
-            var table = getElementContainingRoombaTable();
+            let table = getElementContainingRoombaTable();
             if (!table) {
                 //Detect a bug/corruption in Microsoft Edge with Tampermonkey where the script is run twice, but the second
                 //  time the document does not contain the elements we need. This is handled
@@ -751,6 +790,22 @@
                     '</div>' +
                     '';
                 table.insertAdjacentHTML('beforeend', fieldRowHtml);
+            } else if (isViewsBelowTitle) {
+                const cells = table.querySelectorAll('#question-header + div.grid > .grid--cell');
+                const oldLastDiv = cells[cells.length - 1];
+                oldLastDiv.classList.add('mr16');
+                fieldRowHtml = '' +
+                    '<div class="grid--cell ws-nowrap mb8 mr16 roombaTooltip" id="roombaFieldRow">' +
+                    '    <span class="fc-light mr2" id="roombaFieldRowLabel">Roomba:</span>' +
+                    '    <span id="roombaField">...</span>' +
+                    '</div>' +
+                    '';
+                table.insertAdjacentHTML('beforeend', fieldRowHtml);
+                const roombaFieldRow = document.getElementById('roombaFieldRow');
+                const roombaOptionsDiv = document.getElementById('roombaOptionsDiv');
+                if (roombaOptionsDiv) {
+                    roombaFieldRow.insertAdjacentElement('beforebegin', roombaOptionsDiv);
+                }
             } else {
                 tbody.insertAdjacentHTML('beforeend', fieldRowHtml);
             }
@@ -881,6 +936,7 @@
                 '}\n' +
                 '#roombaTableDiv {\n' +
                 '    font-size: inherit;\n' +
+                '    display: inline;\n' +
                 '}\n' +
                 '#roombaTableDivDiv {\n' +
                 '    width:' + (sidebarWidth - 8) + 'px;\n' +
@@ -955,11 +1011,10 @@
                 '    padding-left:2em;\n' +
                 '}\n' +
                 '#roombaOptionsDiv {\n' +
-                '    width:300px;\n' +
                 '    position:relative;\n' +
                 '}\n' +
                 '#roombaOptionsAbsoluteDiv {\n' +
-                '    width:100%;\n' +
+                '    width:300px;\n' +
                 '    position:absolute;\n' +
                 '    z-index:9;\n' +
                 '    top: 0em;\n' +
@@ -1001,6 +1056,16 @@
                 '    margin-bottom:.5em;\n' +
                 '}\n' +
                 '';
+            var cssViewsBelowTitle = '' +
+                '#roombaOptionsAbsoluteDiv {\n' +
+                '    z-index:999;\n' +
+                '    top: 10em;\n' +
+                '    left: -50%;\n' +
+                '}\n' +
+                '.roombaTooltipText {\n' +
+                '    top: 1.1em;\n' +
+                '}\n' +
+                '';
             var cssBase = '' +
                 '.roombaShowOverflow {\n' +
                 '    overflow:visible !important;\n' +
@@ -1017,6 +1082,16 @@
                 '}\n' +
                 '#roombaFieldRow {\n' +
                 '    min-height: 9px;\n' +
+                '    z-index: 998;\n' +
+                '}\n' +
+                '#question-header + div.grid #roombaFieldRow {\n' +
+                '    transform: translateY(0px);\n' +
+                '}\n' +
+                '#question-header + div.grid #roombaField {\n' +
+                '    display: inline-flex;\n' +
+                '}\n' +
+                '#question-header + div.grid #roombaField b {\n' +
+                '    font-weight: normal;\n' +
                 '}\n' +
                 '';
             var cssMagicTag = '' +
@@ -1041,6 +1116,9 @@
                 '}' +
                 '';
             var cssToUse = cssRoombaTable + cssShortStatus + cssToolTip + cssOptions + cssBase + cssMagicTag;
+            if (isViewsBelowTitle) {
+                cssToUse += cssViewsBelowTitle;
+            }
             if (isFirefox) {
                 cssToUse += cssFirefox;
             } else if (isEdge) {
@@ -1442,7 +1520,11 @@
                     roombaTableHtml += '<th>' + headerText + '</th>';
                 });
                 roombaTableHtml += '</tr></tbody></table></a></div></div>';
-                getElementContainingRoombaTable().insertAdjacentHTML('afterend', roombaTableHtml);
+                if (isViewsBelowTitle) {
+                    getElementContainingRoombaTable().insertAdjacentHTML('beforeend', roombaTableHtml);
+                } else {
+                    getElementContainingRoombaTable().insertAdjacentHTML('afterend', roombaTableHtml);
+                }
                 var table = document.getElementById('roombaTable');
                 var caption = table.createCaption();
                 var daysQual;
@@ -1547,13 +1629,24 @@
 
             function insertRoombaForecasterOptionsDialog() {
                 //Add the options dialog to the DOM along with event listeners to control it.
-                var qinfo = getElementContainingRoombaTable();
+                const qinfo = getElementContainingRoombaTable();
+                let intoElementChild = qinfo.parentNode;
+                let where = 'beforebegin';
                 if (isMagicTag) {
                     //For MagicTag, the options div should be immediately inside the .review-sidebar container,
                     // not two levels up.
-                    qinfo = qinfo.firstChild;
+                    intoElementChild = qinfo;
                 }
-                qinfo.parentNode.insertAdjacentHTML('beforebegin', '' +
+                if (isViewsBelowTitle) {
+                    intoElementChild = qinfo;
+                    where = 'beforeend';
+                    const roombaFieldRow = document.getElementById('roombaFieldRow');
+                    if (roombaFieldRow) {
+                        intoElementChild = roombaFieldRow;
+                        where = 'beforebegin';
+                    }
+                }
+                 intoElementChild.insertAdjacentHTML(where, '' +
                     '<div id="roombaOptionsDiv">' +
                     '    <div id="roombaOptionsAbsoluteDiv">' +
                     '        <div class="roombaOptionsTitle"><B>Roomba Forecaster Options</B></div>' +
@@ -1580,7 +1673,7 @@
                     '        </div>' +
                     '        <label>' +
                     '            <input type="checkbox" id="roombaOptionsCheckbox-alwaysShowRoombaTable"/>' +
-                    '            Always display the Roomba table.' +
+                    '            Always display the Roomba table. [This looks better when in the sidebar.]' +
                     '        </label>' +
                     '        <div id="roombaOptionsAdditionalDiv" style="display:none;">' +
                     '            <br>' +
@@ -1838,6 +1931,7 @@
                 addRoombaField();
                 insertLargeRoombaTable(areShortTableHeadersNeeded(), minRoombaDays, roombaFrequency);
                 populateRoombaField(downvoteWillQualify, downvoteWillQualifyByRoomba, minRoombaDays, roombaFrequency);
+                document.getElementById('roombaFieldRow').insertAdjacentElement('beforebegin', document.getElementById('roombaOptionsDiv'));
                 adjustDocumentToObject(obj);
                 addDisplayOptionsClickListeners();
             }
@@ -1873,9 +1967,19 @@
                     //Apply tooltip classes
                     roombaTableDivDiv.classList.add('roombaTooltipText');
                     roombaTableDiv.classList.add('roombaTooltipTextPositionDiv');
-                    //Move the Roomba table to be the first child of the first td inside the row the .roombaTooltip class is on.
-                    var tooltipTd = document.querySelector('#roombaFieldRowLabel');
+                    //Move the Roomba table to be the first child of the first td inside the row of the .roombaTooltip class is on.
+                    const tooltipTd = document.getElementById('roombaFieldRowLabel');
                     tooltipTd.insertBefore(roombaTableDiv, tooltipTd.firstChild);
+                    //We could remove the mr16 class from the roombaFieldRow here,
+                    //  but having it doesn't appear to be causing an issue and
+                    //  removing it might if there's another entry on the line
+                    //  which was added by some other userscript.
+                    /*
+                    if (isViewsBelowTitle) {
+                        const fieldRow = document.getElementById('roombaFieldRow');
+                        fieldRow.classList.remove('mr16');
+                    }
+                    */
                 } else if (!obj.alwaysShowRoombaTable) {
                     //Don't show the Roomba Table. Only apply this if not a tooltip.
                     roombaTableDiv.style.display = 'none';
