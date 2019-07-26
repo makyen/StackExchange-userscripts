@@ -636,17 +636,20 @@
                     } else if (statusText.search(/locked/i) > -1) {
                         //Question is locked.
                         question.locked_date = elementTooltipTextAsDateSeconds(el.parentNode.parentNode.querySelector('span.relativetime'));
-                    } else if (statusText.search(/migrated/i) > -1) {
-                        //The question was migrated. While there is code that uses this, no example questions were
-                        //  found to test the actual Roomba logic. Scraping works, duplicating the API, but no
-                        //  questions which qualify for Roomba were found to test.
+                    } else if (statusText.search(/migrated|migration\s*rejected/i) > -1) {
+                        //The question was migrated.
+                        //Tested on https://stackoverflow.com/questions/56933578/stata-keeping-observations-under-many-criteria-when-they-appear-in-more-than prior to deletion.
                         var migratedFromTo = 'migrated_to';
-                        if (el.parentNode.textContent.search(/migrated\s*from/i) > -1) {
+                        if (el.parentNode.textContent.search(/migrated\s*from|migration\s*rejected\s*from/i) > -1) {
                             migratedFromTo = 'migrated_from';
                         }
                         question[migratedFromTo] = {
                             on_date: elementTooltipTextAsDateSeconds(el.parentNode.parentNode.querySelector('span.relativetime')),
                         };
+                        if (statusText.search(/migration\s*rejected/i) > -1) {
+                            //Question is also locked, but there's no banner that says so.
+                            question.locked_date = elementTooltipTextAsDateSeconds(el.parentNode.parentNode.querySelector('span.relativetime'));
+                        }
                     } else if (statusText.search(/deleted/i) > -1) {
                         isDeleted = true;
                     }
