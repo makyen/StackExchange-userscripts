@@ -12,13 +12,13 @@
 // @grant        GM.getValue
 // @grant        GM.setValue
 // @require      https://github.com/SO-Close-Vote-Reviewers/UserScripts/raw/master/gm4-polyfill.js
-// @include      /^https?://([^/]*\.)?stackoverflow\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
-// @include      /^https?://([^/]*\.)?serverfault\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
-// @include      /^https?://([^/]*\.)?superuser\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
-// @include      /^https?://([^/]*\.)?stackexchange\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
-// @include      /^https?://([^/]*\.)?askubuntu\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
-// @include      /^https?://([^/]*\.)?stackapps\.com/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
-// @include      /^https?://([^/]*\.)?mathoverflow\.net/(?:(?:q(uestions)?|review/close)/\d|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?stackoverflow\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?serverfault\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?superuser\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?stackexchange\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?askubuntu\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?stackapps\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
+// @include      /^https?://([^/]*\.)?mathoverflow\.net/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
 // ==/UserScript==
 
 /*This is a fork of "Roombaforecast" by Siguza, which can be obtained from:
@@ -88,7 +88,7 @@
     const isBlink = (isChrome || isOpera) && !!window.CSS;
 
     const configKeys = Object.keys(config);
-    const isCloseReview = window.location.pathname.indexOf('/review/close/') === 0;
+    const isCloseReview = window.location.pathname.indexOf('/review/close/') === 0 || window.location.pathname === '/review/close';
     const isMagicTag = window.location.pathname.indexOf('/review/MagicTagReview') === 0;
     const isMeta = /(?:^|\.)meta\./.test(window.location.hostname);
     const beforeRoombaTableSelector = '#qinfo, .reviewable-post-stats > table, .review-task .review-sidebar .review-information';
