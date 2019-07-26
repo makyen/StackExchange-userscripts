@@ -257,11 +257,15 @@
 
         function addVoteEvents() {
             //Update the roomba if the user clicks on a question vote.
-            //There are only two possible question votes so put the event listener directly on those.
-            document.querySelector('#question .js-vote-up-btn').addEventListener('click', delayUpdateRoomba);
-            document.querySelector('#question .js-vote-down-btn').addEventListener('click', delayUpdateRoomba);
-            //Update the roomba if the user clicks on an answer vote.
-            document.querySelector('#answers').addEventListener('click', updateRoombaIfClickIsVote);
+            try {
+                //There are only two possible question votes so put the event listener directly on those.
+                document.querySelector('#question .js-vote-up-btn').addEventListener('click', delayUpdateRoomba);
+                document.querySelector('#question .js-vote-down-btn').addEventListener('click', delayUpdateRoomba);
+                //Update the roomba if the user clicks on an answer vote.
+                document.querySelector('#answers').addEventListener('click', updateRoombaIfClickIsVote);
+            } catch (e) {
+                //Ignore errors. We would get errors here when the question is locked.
+            }
         }
 
         function mainAjaxEventReceived(event) {
