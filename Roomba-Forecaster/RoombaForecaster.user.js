@@ -794,7 +794,7 @@
                 oldLastDiv.classList.add('mr16');
                 fieldRowHtml = '' +
                     '<div class="grid--cell ws-nowrap mb8 mr16 roombaTooltip" id="roombaFieldRow">' +
-                    '    <span class="fc-light mr2" id="roombaFieldRowLabel">Roomba:</span>' +
+                    '    <span class="fc-light mr2" id="roombaFieldRowLabel">Roomba</span>' +
                     '    <span id="roombaField">...</span>' +
                     '</div>' +
                     '';
