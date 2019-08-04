@@ -572,6 +572,13 @@
                 });
             }
 
+            function findElementWithMatchingTextInTooltip(query, text) {
+                //Get the first element matching the query which also contains the text or RegEx.
+                return asArray(document.querySelectorAll(query)).find(function(el) {
+                    return el.title.search(text) > -1;
+                });
+            }
+
             function getRestOfTextWithMatchingText(query, text) {
                 //Get the remaining text from the first element that matches both the query
                 //  and the specified text/RegEx once the matching text has been removed.
@@ -629,9 +636,13 @@
                     //migrated_from
                     //migrated_to
                 };
+                //views, in tooltip available from under the question title as of 2019-07-26/7.
+                const viewSelector = isViewsBelowTitle ? '#question-header + div.grid > .grid--cell' : '#qinfo p.label-key';
+                if (!question.view_count) {
+                    question.view_count = +findElementWithMatchingTextInTooltip(viewSelector, 'times').title.replace(/(?:viewed|times|[,.\s])/ig, '');
+                }
                 //views, if the text is the simplified number used under the question title as of 2019-07-25.
                 if (!question.view_count) {
-                    const viewSelector = isViewsBelowTitle ? '#question-header + div.grid > .grid--cell' : '#qinfo p.label-key';
                     question.view_count = getApproximateNumberFromSimplifiedNumberText(getRestOfTextWithMatchingText(viewSelector, 'times').replace(/viewed/i, '').trim());
                 }
                 //last_edit_date
