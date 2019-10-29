@@ -34,10 +34,9 @@
  *  list all the code which was retained.
  */
 
-/*The remainder of this code is released under CC BY-SA 4.0, the
- *  international version of the license used for all contributions to
- *  Stack Exchange.  You can see a copy of this license at:
- *    https://creativecommons.org/licenses/by-sa/4.0/
+/*The remainder of this code is released under the MIT license.
+ *  You can see a copy of the license at:
+ *    https://github.com/makyen/StackExchange-userscripts/blob/master/LICENSE.md
  */
 
 /* Set config.scrapePage to false to use the API instead of scraping the page.
