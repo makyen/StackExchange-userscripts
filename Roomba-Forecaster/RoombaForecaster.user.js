@@ -2,7 +2,7 @@
 // @name         Roomba Forecaster
 // @author       Makyen
 // @author       Siguza
-// @version      2.2.0
+// @version      2.2.1
 // @description  Is Roomba going to delete the question? If not, why? If so, when?
 // @namespace    makyen-RoombaForecaster
 // @homepage     https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster
@@ -20,6 +20,7 @@
 // @include      /^https?://([^/]*\.)?stackapps\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
 // @include      /^https?://([^/]*\.)?mathoverflow\.net/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
 // ==/UserScript==
+/* globals StackExchange */
 
 /*This is a fork of "Roombaforecast" by Siguza, which can be obtained from:
  *  https://github.com/Siguza/StackScripts/blob/master/RoombaForecast.user.js
@@ -34,10 +35,9 @@
  *  list all the code which was retained.
  */
 
-/*The remainder of this code is released under CC BY-SA 4.0, the
- *  international version of the license used for all contributions to
- *  Stack Exchange.  You can see a copy of this license at:
- *    https://creativecommons.org/licenses/by-sa/4.0/
+/*The remainder of this code is released under the MIT license.
+ *  You can see a copy of the license at:
+ *    https://github.com/makyen/StackExchange-userscripts/blob/master/LICENSE.md
  */
 
 /* Set config.scrapePage to false to use the API instead of scraping the page.
@@ -63,7 +63,7 @@
         useTooltip: true,               //Put the larger Roomba table in a tooltip.
         showShortReasons: false,        //Show a short version of the reasons for "roomba No".
         showIfDownvoteWillRoomba: true, //Show if a downvote is enough to qualify for Roomba.
-        alwaysShowRoombaTable: false,    //If !useToolTip controls display of larger Roomba table
+        alwaysShowRoombaTable: false,   //If !useToolTip controls display of larger Roomba table
     };
 
     /* The following code for detecting browsers is from my answer at:
@@ -146,101 +146,6 @@
                     }));
                 }, 500);
             });
-        }
-
-        /*Copied from various other scripts of mine*/
-        function executeInPage(functionToRunInPage, leaveInPage, id) {
-            //Execute a function in the page context.
-            // Any additional arguments passed to this function are passed into the page to the
-            // functionToRunInPage.
-            // Such arguments must be Object, Array, functions, RegExp,
-            // Date, and/or other primitives (Boolean, null, undefined,
-            // Number, String, but not Symbol).  Circular references are
-            // not supported. Prototypes are not copied.
-            // Using () => doesn't set arguments, so can't use it to define this function.
-            // This has to be done without jQuery, as jQuery creates the script
-            // within this context, not the page context, which results in
-            // permission denied to run the function.
-            function convertToText(args) {
-                //This uses the fact that the arguments are converted to text which is
-                //  interpreted within a <script>. That means we can create other types of
-                //  objects by recreating their normal JavaScript representation.
-                //  It's actually easier to do this without JSON.stringify() for the whole
-                //  Object/Array.
-                var asText = '';
-                var level = 0;
-
-                function lineSeparator(adj, isntLast) {
-                    level += adj - ((typeof isntLast === 'undefined' || isntLast) ? 0 : 1);
-                    asText += (isntLast ? ',' : '') + '\n' + (new Array((level * 2) + 1)).join('');
-                }
-
-                function recurseObject(obj) {
-                    if (Array.isArray(obj)) {
-                        asText += '[';
-                        lineSeparator(1);
-                        obj.forEach(function(value, index, array) {
-                            recurseObject(value);
-                            lineSeparator(0, index !== array.length - 1);
-                        });
-                        asText += ']';
-                    } else if (obj === null) {
-                        asText += 'null';
-                    } else if (obj === void (0)) {
-                        //undefined
-                        asText += 'void(0)';
-                    } else if (Number.isNaN(obj)) {
-                        //Special cases for Number
-                        //Not a Number (NaN)
-                        asText += 'Number.NaN';
-                    } else if (obj === 1 / 0) {
-                        // +Infinity
-                        asText += '1/0';
-                    } else if (obj === 1 / -0) {
-                        // -Infinity
-                        asText += '1/-0';
-                    } else if (obj instanceof RegExp || typeof obj === 'function') {
-                        //function
-                        asText += obj.toString();
-                    } else if (obj instanceof Date) {
-                        asText += 'new Date("' + obj.toJSON() + '")';
-                    } else if (typeof obj === 'object') {
-                        asText += '{';
-                        lineSeparator(1);
-                        Object.keys(obj).forEach(function(prop, index, array) {
-                            asText += JSON.stringify(prop) + ': ';
-                            recurseObject(obj[prop]);
-                            lineSeparator(0, index !== array.length - 1);
-                        });
-                        asText += '}';
-                    } else if (['boolean', 'number', 'string'].indexOf(typeof obj) > -1) {
-                        asText += JSON.stringify(obj);
-                    } else {
-                        console.log('Didn\'t handle: typeof obj:', typeof obj, '::  obj:', obj);
-                    }
-                }
-                recurseObject(args);
-                return asText;
-            }
-            var newScript = document.createElement('script');
-            if (typeof id === 'string' && id) {
-                newScript.id = id;
-            }
-            var args = [];
-            //Using .slice(), or other Array methods, on arguments prevents optimization.
-            for (var index = 3; index < arguments.length; index++) {
-                args.push(arguments[index]);
-            }
-            newScript.textContent = '(' + functionToRunInPage.toString() + ').apply(null,' +
-                convertToText(args) + ');';
-            (document.head || document.documentElement).appendChild(newScript);
-            if (!leaveInPage) {
-                //Synchronous scripts are executed immediately and can be immediately removed.
-                //Scripts with asynchronous functionality *may* need to remain in the page
-                //  until complete. Exactly what's needed depends on actual usage.
-                document.head.removeChild(newScript);
-            }
-            return newScript;
         }
 
         function addRoombaIfNone() {
@@ -339,6 +244,17 @@
         window.addEventListener('roombaForecaster-jQueryAJAX-complete', mainAjaxEventReceived);
     }
 
+    function inPageNotify(message) {
+        function notifyIfSEExists() {
+            if (typeof StackExchange === 'object' && StackExchange.notify && typeof StackExchange.notify.show === 'function') {
+                StackExchange.notify.show(message, Date.now());
+            } else {
+                setTimeout(notifyIfSEExists, 1000);
+            }
+        }
+        notifyIfSEExists();
+    }
+
     function saveConfig() {
         return GM.setValue('config', JSON.stringify(config)).catch((e) => {
             console.error(e);
@@ -347,12 +263,24 @@
     }
 
     function restoreConfig() {
-        var storedConfig = JSON.stringify({});
+        let storedConfig = JSON.stringify({});
         return GM.getValue('config', storedConfig).then((inStorage) => {
             storedConfig = JSON.parse(inStorage);
             Object.keys(storedConfig).forEach(function(key) {
                 config[key] = storedConfig[key];
             });
+            if (!config.disabledScraping201910) {
+                config.disabledScraping201910OriginalScrapePage = config.scrapePage;
+                config.disabledScraping201910 = true;
+                if (config.scrapePage) {
+                    //Currently, set to scrape pages, which was the default.
+                    //  Set to use the API and notify the user.
+                    config.scrapePage = false;
+                    const message = 'Roomba Forecaster is now fetching data from the SE API on question pages. Once the changes SE is making to question status banners are complete for all sites, it\'s expected to return to scraping question pages for the data it needs.';
+                    executeInPage(inPageNotify, true, `RoombaForecaster-notify-${Date.now()}`, message);
+                }
+                return saveConfig();
+            }
         }).catch((e) => {
             console.error(e);
             configSaveWorking = false;
@@ -368,6 +296,8 @@
             //Can't use tooltip if not showing the short status.
             obj.useTooltip = false;
         }
+        //Force using the SE API, as we don't understand the new version of the page with different close banner on 50% of SO.
+        obj.scrapePage = false;
     }
 
     function rationalizeConfig() {
@@ -446,6 +376,101 @@
         }
         //Indicate that we don't know what to do with the Object
         return null;
+    }
+
+    /*Copied from various other scripts of mine*/
+    function executeInPage(functionToRunInPage, leaveInPage, id) {
+        //Execute a function in the page context.
+        // Any additional arguments passed to this function are passed into the page to the
+        // functionToRunInPage.
+        // Such arguments must be Object, Array, functions, RegExp,
+        // Date, and/or other primitives (Boolean, null, undefined,
+        // Number, String, but not Symbol).  Circular references are
+        // not supported. Prototypes are not copied.
+        // Using () => doesn't set arguments, so can't use it to define this function.
+        // This has to be done without jQuery, as jQuery creates the script
+        // within this context, not the page context, which results in
+        // permission denied to run the function.
+        function convertToText(args) {
+            //This uses the fact that the arguments are converted to text which is
+            //  interpreted within a <script>. That means we can create other types of
+            //  objects by recreating their normal JavaScript representation.
+            //  It's actually easier to do this without JSON.stringify() for the whole
+            //  Object/Array.
+            var asText = '';
+            var level = 0;
+
+            function lineSeparator(adj, isntLast) {
+                level += adj - ((typeof isntLast === 'undefined' || isntLast) ? 0 : 1);
+                asText += (isntLast ? ',' : '') + '\n' + (new Array((level * 2) + 1)).join('');
+            }
+
+            function recurseObject(obj) {
+                if (Array.isArray(obj)) {
+                    asText += '[';
+                    lineSeparator(1);
+                    obj.forEach(function(value, index, array) {
+                        recurseObject(value);
+                        lineSeparator(0, index !== array.length - 1);
+                    });
+                    asText += ']';
+                } else if (obj === null) {
+                    asText += 'null';
+                } else if (obj === void (0)) {
+                    //undefined
+                    asText += 'void(0)';
+                } else if (Number.isNaN(obj)) {
+                    //Special cases for Number
+                    //Not a Number (NaN)
+                    asText += 'Number.NaN';
+                } else if (obj === 1 / 0) {
+                    // +Infinity
+                    asText += '1/0';
+                } else if (obj === 1 / -0) {
+                    // -Infinity
+                    asText += '1/-0';
+                } else if (obj instanceof RegExp || typeof obj === 'function') {
+                    //function
+                    asText += obj.toString();
+                } else if (obj instanceof Date) {
+                    asText += 'new Date("' + obj.toJSON() + '")';
+                } else if (typeof obj === 'object') {
+                    asText += '{';
+                    lineSeparator(1);
+                    Object.keys(obj).forEach(function(prop, index, array) {
+                        asText += JSON.stringify(prop) + ': ';
+                        recurseObject(obj[prop]);
+                        lineSeparator(0, index !== array.length - 1);
+                    });
+                    asText += '}';
+                } else if (['boolean', 'number', 'string'].indexOf(typeof obj) > -1) {
+                    asText += JSON.stringify(obj);
+                } else {
+                    console.log('Didn\'t handle: typeof obj:', typeof obj, '::  obj:', obj);
+                }
+            }
+            recurseObject(args);
+            return asText;
+        }
+        var newScript = document.createElement('script');
+        if (typeof id === 'string' && id) {
+            newScript.id = id;
+        }
+        var args = [];
+        //Using .slice(), or other Array methods, on arguments prevents optimization.
+        for (var index = 3; index < arguments.length; index++) {
+            args.push(arguments[index]);
+        }
+        newScript.textContent = '(' + functionToRunInPage.toString() + ').apply(null,' +
+            convertToText(args) + ');';
+        (document.head || document.documentElement).appendChild(newScript);
+        if (!leaveInPage) {
+            //Synchronous scripts are executed immediately and can be immediately removed.
+            //Scripts with asynchronous functionality *may* need to remain in the page
+            //  until complete. Exactly what's needed depends on actual usage.
+            document.head.removeChild(newScript);
+        }
+        return newScript;
     }
 
     function addOrUpdateRoomba() {
@@ -572,6 +597,13 @@
                 });
             }
 
+            function findElementWithMatchingTextInTooltip(query, text) {
+                //Get the first element matching the query which also contains the text or RegEx.
+                return asArray(document.querySelectorAll(query)).find(function(el) {
+                    return el.title.search(text) > -1;
+                });
+            }
+
             function getRestOfTextWithMatchingText(query, text) {
                 //Get the remaining text from the first element that matches both the query
                 //  and the specified text/RegEx once the matching text has been removed.
@@ -629,9 +661,13 @@
                     //migrated_from
                     //migrated_to
                 };
+                //views, in tooltip available from under the question title as of 2019-07-26/7.
+                const viewSelector = isViewsBelowTitle ? '#question-header + div.grid > .grid--cell' : '#qinfo p.label-key';
+                if (!question.view_count) {
+                    question.view_count = +findElementWithMatchingTextInTooltip(viewSelector, 'times').title.replace(/(?:viewed|times|[,.\s])/ig, '');
+                }
                 //views, if the text is the simplified number used under the question title as of 2019-07-25.
                 if (!question.view_count) {
-                    const viewSelector = isViewsBelowTitle ? '#question-header + div.grid > .grid--cell' : '#qinfo p.label-key';
                     question.view_count = getApproximateNumberFromSimplifiedNumberText(getRestOfTextWithMatchingText(viewSelector, 'times').replace(/viewed/i, '').trim());
                 }
                 //last_edit_date
@@ -794,7 +830,7 @@
                 oldLastDiv.classList.add('mr16');
                 fieldRowHtml = '' +
                     '<div class="grid--cell ws-nowrap mb8 mr16 roombaTooltip" id="roombaFieldRow">' +
-                    '    <span class="fc-light mr2" id="roombaFieldRowLabel">Roomba:</span>' +
+                    '    <span class="fc-light mr2" id="roombaFieldRowLabel">Roomba</span>' +
                     '    <span id="roombaField">...</span>' +
                     '</div>' +
                     '';
@@ -1676,8 +1712,8 @@
                     '        <div id="roombaOptionsAdditionalDiv" style="display:none;">' +
                     '            <br>' +
                     '            <label title="Scraping the page for the data is faster than calling the SE API. There is no data needed that does not already exist on the page. If you think Roomba Forecaster is showing the wrong data, you can try disabling this option. If enabling the use of the SE API does resolve a problem, please raise an issue on GitHub.">' +
-                    '                <input type="checkbox" id="roombaOptionsCheckbox-scrapePage"/>' +
-                    '                Scrape the page (faster) instead of using the SE API.' +
+                    '                <input type="checkbox" id="roombaOptionsCheckbox-scrapePage" disabled="true"/>' +
+                    '                Scrape the page (faster) instead of using the SE API. (disabled until rewritten after SE HTML/text changes wrt. question status banners stabilize) ' +
                     '            </label>' +
                     '        </div>' +
                     '        <div style="width:100%">' +
@@ -1842,8 +1878,7 @@
             function handleClickEventToToggleOptionDisplay(event) {
                 //Handle a click event on the Roomba status line.
                 event.stopPropagation();
-                const additional = event.shiftKey || event.altKey || event.ctrlKey;
-                toggleOptionDisplay(additional);
+                toggleOptionDisplay(true);
             }
 
             function applyOptionsDialogStateToObject(obj) {
