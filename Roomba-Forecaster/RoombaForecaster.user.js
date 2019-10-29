@@ -20,6 +20,7 @@
 // @include      /^https?://([^/]*\.)?stackapps\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
 // @include      /^https?://([^/]*\.)?mathoverflow\.net/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
 // ==/UserScript==
+/* globals StackExchange */
 
 /*This is a fork of "Roombaforecast" by Siguza, which can be obtained from:
  *  https://github.com/Siguza/StackScripts/blob/master/RoombaForecast.user.js
