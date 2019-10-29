@@ -62,7 +62,7 @@
         useTooltip: true,               //Put the larger Roomba table in a tooltip.
         showShortReasons: false,        //Show a short version of the reasons for "roomba No".
         showIfDownvoteWillRoomba: true, //Show if a downvote is enough to qualify for Roomba.
-        alwaysShowRoombaTable: false,    //If !useToolTip controls display of larger Roomba table
+        alwaysShowRoombaTable: false,   //If !useToolTip controls display of larger Roomba table
     };
 
     /* The following code for detecting browsers is from my answer at:
@@ -1852,8 +1852,7 @@
             function handleClickEventToToggleOptionDisplay(event) {
                 //Handle a click event on the Roomba status line.
                 event.stopPropagation();
-                const additional = event.shiftKey || event.altKey || event.ctrlKey;
-                toggleOptionDisplay(additional);
+                toggleOptionDisplay(true);
             }
 
             function applyOptionsDialogStateToObject(obj) {
