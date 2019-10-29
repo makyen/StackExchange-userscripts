@@ -243,6 +243,17 @@
         window.addEventListener('roombaForecaster-jQueryAJAX-complete', mainAjaxEventReceived);
     }
 
+    function inPageNotify(message) {
+        function notifyIfSEExists() {
+            if (typeof StackExchange === 'object' && StackExchange.notify && typeof StackExchange.notify.show === 'function') {
+                StackExchange.notify.show(message, Date.now());
+            } else {
+                setTimeout(notifyIfSEExists, 1000);
+            }
+        }
+        notifyIfSEExists();
+    }
+
     function saveConfig() {
         return GM.setValue('config', JSON.stringify(config)).catch((e) => {
             console.error(e);
@@ -251,12 +262,24 @@
     }
 
     function restoreConfig() {
-        var storedConfig = JSON.stringify({});
+        let storedConfig = JSON.stringify({});
         return GM.getValue('config', storedConfig).then((inStorage) => {
             storedConfig = JSON.parse(inStorage);
             Object.keys(storedConfig).forEach(function(key) {
                 config[key] = storedConfig[key];
             });
+            if (!config.disabledScraping201910) {
+                config.disabledScraping201910OriginalScrapePage = config.scrapePage;
+                config.disabledScraping201910 = true;
+                if (config.scrapePage) {
+                    //Currently, set to scrape pages, which was the default.
+                    //  Set to use the API and notify the user.
+                    config.scrapePage = false;
+                    const message = 'Roomba Forecaster is now fetching data from the SE API on question pages. Once the changes SE is making to question status banners are complete for all sites, it\'s expected to return to scraping question pages for the data it needs.';
+                    executeInPage(inPageNotify, true, `RoombaForecaster-notify-${Date.now()}`, message);
+                }
+                return saveConfig();
+            }
         }).catch((e) => {
             console.error(e);
             configSaveWorking = false;
@@ -272,6 +295,8 @@
             //Can't use tooltip if not showing the short status.
             obj.useTooltip = false;
         }
+        //Force using the SE API, as we don't understand the new version of the page with different close banner on 50% of SO.
+        obj.scrapePage = false;
     }
 
     function rationalizeConfig() {
@@ -1686,8 +1711,8 @@
                     '        <div id="roombaOptionsAdditionalDiv" style="display:none;">' +
                     '            <br>' +
                     '            <label title="Scraping the page for the data is faster than calling the SE API. There is no data needed that does not already exist on the page. If you think Roomba Forecaster is showing the wrong data, you can try disabling this option. If enabling the use of the SE API does resolve a problem, please raise an issue on GitHub.">' +
-                    '                <input type="checkbox" id="roombaOptionsCheckbox-scrapePage"/>' +
-                    '                Scrape the page (faster) instead of using the SE API.' +
+                    '                <input type="checkbox" id="roombaOptionsCheckbox-scrapePage" disabled="true"/>' +
+                    '                Scrape the page (faster) instead of using the SE API. (disabled until rewritten after SE HTML/text changes wrt. question status banners stabilize) ' +
                     '            </label>' +
                     '        </div>' +
                     '        <div style="width:100%">' +
