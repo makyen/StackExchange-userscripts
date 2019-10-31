@@ -1262,7 +1262,7 @@
                         if (overrides.closedAndMigratedAway && 'closed_date' in question && 'migrated_to' in question) {
                             override = true;
                         }
-                        if (overrides.migratedHereAndRejected && 'closed_date' in question && 'migrated_from' in question && question.closed_reason !== 'duplicate') {
+                        if (overrides.migratedHereAndRejected && 'closed_date' in question && 'migrated_from' in question && question.closed_reason.indexOf('duplicate') === -1) {
                             override = true;
                         }
                     }
@@ -1476,7 +1476,7 @@
                     addReasonsBooleanCriteria('isClosed', ('closed_date' in question), 'closed', 'Cl');
 
                     //Is a duplicate
-                    addReasonsBooleanCriteria('isDuplicate', (question.closed_reason === 'duplicate'), 'duplicate', 'Du');
+                    addReasonsBooleanCriteria('isDuplicate', (question.closed_reason.indexOf('duplicate') > -1), 'duplicate', 'Du');
 
                     //Has a positive score answer
                     var metCriteria = addReasonsQuestionAboveNumericCriteria('maxAnswerScore', question.maxAnswerScore, 'answer<br/>&nbsp;&nbsp;&nbsp;&nbsp;score', 'AS');
