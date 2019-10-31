@@ -2,7 +2,7 @@
 // @name         Roomba Forecaster
 // @author       Makyen
 // @author       Siguza
-// @version      2.2.2
+// @version      2.2.3
 // @description  Is Roomba going to delete the question? If not, why? If so, when?
 // @namespace    makyen-RoombaForecaster
 // @homepage     https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster
@@ -1262,7 +1262,7 @@
                         if (overrides.closedAndMigratedAway && 'closed_date' in question && 'migrated_to' in question) {
                             override = true;
                         }
-                        if (overrides.migratedHereAndRejected && 'closed_date' in question && 'migrated_from' in question && question.closed_reason.indexOf('duplicate') === -1) {
+                        if (overrides.migratedHereAndRejected && 'closed_date' in question && 'migrated_from' in question && (question.closed_reason || '').indexOf('duplicate') === -1) {
                             override = true;
                         }
                     }
@@ -1476,7 +1476,7 @@
                     addReasonsBooleanCriteria('isClosed', ('closed_date' in question), 'closed', 'Cl');
 
                     //Is a duplicate
-                    addReasonsBooleanCriteria('isDuplicate', (question.closed_reason.indexOf('duplicate') > -1), 'duplicate', 'Du');
+                    addReasonsBooleanCriteria('isDuplicate', ((question.closed_reason || '').indexOf('duplicate') > -1), 'duplicate', 'Du');
 
                     //Has a positive score answer
                     var metCriteria = addReasonsQuestionAboveNumericCriteria('maxAnswerScore', question.maxAnswerScore, 'answer<br/>&nbsp;&nbsp;&nbsp;&nbsp;score', 'AS');
