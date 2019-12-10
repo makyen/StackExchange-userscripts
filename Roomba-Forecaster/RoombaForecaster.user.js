@@ -1687,9 +1687,9 @@
                 }
                 intoElementChild.insertAdjacentHTML(where, '' +
                     '<div id="roombaOptionsDiv">' +
-                    '    <div id="roombaOptionsAbsoluteDiv">' +
+                    '    <div id="roombaOptionsAbsoluteDiv" style="display: none; opacity: 0; pointer-events: none;">' +
                     '        <div class="roombaOptionsTitle"><B>Roomba Forecaster Options</B></div>' +
-                    '        <div class="roombaOptionsWarning" id="roombaOptionsSaveNotWork">' +
+                    '        <div class="roombaOptionsWarning" id="roombaOptionsSaveNotWork" style="display: none;">' +
                     '            <B>Options can NOT be saved. Edit user script code to change options, or grant permission to save values in this user script.</B>' +
                     '        </div>' +
                     '        <label>' +
