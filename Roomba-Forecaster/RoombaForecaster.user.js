@@ -1676,8 +1676,7 @@
                     //For MagicTag, the options div should be immediately inside the .review-sidebar container,
                     // not two levels up.
                     intoElementChild = qinfo;
-                }
-                if (isViewsBelowTitle) {
+                } else if (isViewsBelowTitle) {
                     intoElementChild = qinfo;
                     where = 'beforeend';
                     const roombaFieldRow = document.getElementById('roombaFieldRow');
