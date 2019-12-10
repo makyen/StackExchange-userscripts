@@ -905,8 +905,9 @@
             //Add the Roomba Forecaster styles to the DOM.
             const styleEl = document.createElement('style');
             const sidebarWidth = document.querySelector(sidebarSelector).getBoundingClientRect().width;
+            const styleId = 'roombaStyle';
 
-            styleEl.id = 'roombaStyle';
+            styleEl.id = styleId;
             styleEl.setAttribute('type', 'text/css');
             //Comments actually in the CSS disrupt Edge
             var cssFirefox = '' +
@@ -1162,7 +1163,12 @@
                 cssToUse += cssChrome;
             }
             styleEl.textContent = cssToUse;
-            document.head.appendChild(styleEl);
+            const head = document.head;
+            const oldStyleElement = head.querySelector(`#${styleId}`);
+            if (oldStyleElement) {
+                oldStyleElement.remove();
+            }
+            head.appendChild(styleEl);
         }
 
         //Create the basics of the Roomba row. The API call could take time, so let the user see
