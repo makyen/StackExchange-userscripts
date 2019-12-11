@@ -2,7 +2,7 @@
 // @name         Roomba Forecaster
 // @author       Makyen
 // @author       Siguza
-// @version      2.2.3
+// @version      2.2.4
 // @description  Is Roomba going to delete the question? If not, why? If so, when?
 // @namespace    makyen-RoombaForecaster
 // @homepage     https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster
@@ -703,7 +703,7 @@
                         //Question is closed, or on hold. API values do not distinguish.
                         question.closed_reason = el.nextSibling.textContent.replace(/^\s*as\s+/, '').replace(/\s+by\s*$/, '');
                         if (statusText.search(/marked/i) > -1) {
-                            question.closed_reason = 'duplicate';
+                            question.closed_reason = 'Duplicate of…';
                         }
                         question.closed_date = elementTooltipTextAsDateSeconds(el.parentNode.parentNode.querySelector('span.relativetime'));
                     } else if (statusText.search(/locked/i) > -1) {
@@ -905,8 +905,9 @@
             //Add the Roomba Forecaster styles to the DOM.
             const styleEl = document.createElement('style');
             const sidebarWidth = document.querySelector(sidebarSelector).getBoundingClientRect().width;
+            const styleId = 'roombaStyle';
 
-            styleEl.id = 'roombaStyle';
+            styleEl.id = styleId;
             styleEl.setAttribute('type', 'text/css');
             //Comments actually in the CSS disrupt Edge
             var cssFirefox = '' +
@@ -1162,7 +1163,12 @@
                 cssToUse += cssChrome;
             }
             styleEl.textContent = cssToUse;
-            document.head.appendChild(styleEl);
+            const head = document.head;
+            const oldStyleElement = head.querySelector(`#${styleId}`);
+            if (oldStyleElement) {
+                oldStyleElement.remove();
+            }
+            head.appendChild(styleEl);
         }
 
         //Create the basics of the Roomba row. The API call could take time, so let the user see
@@ -1476,7 +1482,7 @@
                     addReasonsBooleanCriteria('isClosed', ('closed_date' in question), 'closed', 'Cl');
 
                     //Is a duplicate
-                    addReasonsBooleanCriteria('isDuplicate', ((question.closed_reason || '').indexOf('duplicate') > -1), 'duplicate', 'Du');
+                    addReasonsBooleanCriteria('isDuplicate', ((question.closed_reason || '').indexOf('uplicate') > -1), 'duplicate', 'Du');
 
                     //Has a positive score answer
                     var metCriteria = addReasonsQuestionAboveNumericCriteria('maxAnswerScore', question.maxAnswerScore, 'answer<br/>&nbsp;&nbsp;&nbsp;&nbsp;score', 'AS');
@@ -1670,8 +1676,7 @@
                     //For MagicTag, the options div should be immediately inside the .review-sidebar container,
                     // not two levels up.
                     intoElementChild = qinfo;
-                }
-                if (isViewsBelowTitle) {
+                } else if (isViewsBelowTitle) {
                     intoElementChild = qinfo;
                     where = 'beforeend';
                     const roombaFieldRow = document.getElementById('roombaFieldRow');
@@ -1682,9 +1687,9 @@
                 }
                 intoElementChild.insertAdjacentHTML(where, '' +
                     '<div id="roombaOptionsDiv">' +
-                    '    <div id="roombaOptionsAbsoluteDiv">' +
+                    '    <div id="roombaOptionsAbsoluteDiv" style="display: none; opacity: 0; pointer-events: none;">' +
                     '        <div class="roombaOptionsTitle"><B>Roomba Forecaster Options</B></div>' +
-                    '        <div class="roombaOptionsWarning" id="roombaOptionsSaveNotWork">' +
+                    '        <div class="roombaOptionsWarning" id="roombaOptionsSaveNotWork" style="display: none;">' +
                     '            <B>Options can NOT be saved. Edit user script code to change options, or grant permission to save values in this user script.</B>' +
                     '        </div>' +
                     '        <label>' +
