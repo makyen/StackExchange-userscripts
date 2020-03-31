@@ -67,6 +67,6 @@ The tooltip is styled to look like a native tooltip in the browsers which were t
 
 ----------------------------
 <sup>1.  Actually, four Roomba tasks run weekly.  The other two only
-affect questions migrated to another Stack Exchange site or from another site and rejected. While the script should detect these, the Stack Exchange system automatically forwards the page to the site where the question currently exists. Thus, unless something changes in how Stack Exchange shows such questions, it is unlikely that you will see one.</sup>
+affect questions migrated to another Stack Exchange site or from another site and rejected. While the script should detect these, the Stack Exchange system automatically forwards the page to the site where the question currently exists. Thus, unless you're a moderator on the origin site or you use the `?noredirect=1` parameter, it is unlikely that you will see one.</sup>
 
 <sup>This is a fork of [RoombaForecast](https://github.com/Siguza/StackScripts/blob/master/RoombaForecast.user.js).</sup>
