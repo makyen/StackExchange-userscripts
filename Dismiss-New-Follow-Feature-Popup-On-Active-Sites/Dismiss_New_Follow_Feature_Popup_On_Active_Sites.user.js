@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SE: Dismiss New Follow Feature Popup On Active Sites
 // @namespace    https://github.com/makyen/StackExchange-userscripts
-// @version      1.0.0
+// @version      1.1.0
 // @description  Dismiss the popup notification of the new follow feature on all sites you have an account on.
 // @author       Makyen
 // @match        https://stackexchange.com/dismiss-follow-notification
