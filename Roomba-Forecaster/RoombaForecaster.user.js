@@ -2,7 +2,7 @@
 // @name         Roomba Forecaster
 // @author       Makyen
 // @author       Siguza
-// @version      2.2.4
+// @version      2.2.5
 // @description  Is Roomba going to delete the question? If not, why? If so, when?
 // @namespace    makyen-RoombaForecaster
 // @homepage     https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster
@@ -703,7 +703,7 @@
                         //Question is closed, or on hold. API values do not distinguish.
                         question.closed_reason = el.nextSibling.textContent.replace(/^\s*as\s+/, '').replace(/\s+by\s*$/, '');
                         if (statusText.search(/marked/i) > -1) {
-                            question.closed_reason = 'Duplicate of…';
+                            question.closed_reason = 'Duplicate';
                         }
                         question.closed_date = elementTooltipTextAsDateSeconds(el.parentNode.parentNode.querySelector('span.relativetime'));
                     } else if (statusText.search(/locked/i) > -1) {
@@ -1020,9 +1020,6 @@
                 '#roombaRow {\n' +
                 '    border-collapse: collapse;\n' +
                 '}\n' +
-                '#roombaFieldRowLabel {\n' +
-                '    vertical-align: text-top;\n' +
-                '}\n' +
                 '';
             var cssToolTip = '' +
                 '.roombaTooltipTextPositionDiv {\n' +
@@ -1268,7 +1265,7 @@
                         if (overrides.closedAndMigratedAway && 'closed_date' in question && 'migrated_to' in question) {
                             override = true;
                         }
-                        if (overrides.migratedHereAndRejected && 'closed_date' in question && 'migrated_from' in question && (question.closed_reason || '').indexOf('duplicate') === -1) {
+                        if (overrides.migratedHereAndRejected && 'closed_date' in question && 'migrated_from' in question && (question.closed_reason || '').indexOf('uplicate') === -1) {
                             override = true;
                         }
                     }
