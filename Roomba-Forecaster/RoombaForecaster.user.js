@@ -1020,9 +1020,6 @@
                 '#roombaRow {\n' +
                 '    border-collapse: collapse;\n' +
                 '}\n' +
-                '#roombaFieldRowLabel {\n' +
-                '    vertical-align: text-top;\n' +
-                '}\n' +
                 '';
             var cssToolTip = '' +
                 '.roombaTooltipTextPositionDiv {\n' +
