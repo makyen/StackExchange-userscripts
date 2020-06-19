@@ -703,7 +703,7 @@
                         //Question is closed, or on hold. API values do not distinguish.
                         question.closed_reason = el.nextSibling.textContent.replace(/^\s*as\s+/, '').replace(/\s+by\s*$/, '');
                         if (statusText.search(/marked/i) > -1) {
-                            question.closed_reason = 'Duplicate of…';
+                            question.closed_reason = 'Duplicate';
                         }
                         question.closed_date = elementTooltipTextAsDateSeconds(el.parentNode.parentNode.querySelector('span.relativetime'));
                     } else if (statusText.search(/locked/i) > -1) {
@@ -1268,7 +1268,7 @@
                         if (overrides.closedAndMigratedAway && 'closed_date' in question && 'migrated_to' in question) {
                             override = true;
                         }
-                        if (overrides.migratedHereAndRejected && 'closed_date' in question && 'migrated_from' in question && (question.closed_reason || '').indexOf('duplicate') === -1) {
+                        if (overrides.migratedHereAndRejected && 'closed_date' in question && 'migrated_from' in question && (question.closed_reason || '').indexOf('uplicate') === -1) {
                             override = true;
                         }
                     }
