@@ -17,7 +17,7 @@
 // @exclude       *://chat.*.stackexchange.com/*
 // @exclude       *://api.*.stackexchange.com/*
 // @exclude       *://data.stackexchange.com/*
-// @version       1.0.0
+// @version       1.0.1
 // @grant         none
 // ==/UserScript==
 /* globals StackExchange */
@@ -37,7 +37,7 @@
                         const matches = type === 'answer' ? href.match(/^.*#(\d+)$/) : href.match(/^\/q(?:uestions)?\/(\d+)\/.*$/);
                         if (matches && matches[1]) {
                             const postId = matches[1];
-                            $this.before('<a href="#" class="flag-post-link" title="flag this post for serious problems or moderator attention" data-postid="' + postId + '" style="margin-left:1em;margin-right:1em;display:inline;width:auto;">&#9873;</a>').css('display', 'inline');
+                            $this.before('<a href="#" class="flag-post-link flag-beside-link" title="flag this post for serious problems or moderator attention" data-postid="' + postId + '">&#9873;</a>');
                             $this.parent().find('.flag-post-link').data({
                                 postid: postId,
                                 loadedTimestamp: now,
@@ -51,4 +51,17 @@
     $(document).ajaxComplete(addFlags);
     addFlags();
     StackExchange.ready(() => StackExchange.vote_closingAndFlagging.init());
+    $('body').append(`
+<style>
+.flag-beside-link{
+    margin-right:1em;
+    float:left;
+    width:auto;
+    display: inline-block;
+}
+.user-show-new .user-panel .answer-hyperlink, .user-show-new .user-panel .question-hyperlink {
+    width: initial;
+}
+</style>
+`);
 })();
