@@ -1618,32 +1618,18 @@
                     });
                     //Determine text, if any, describing downvotes that will qualify the question for Roomba
                     var downvoteText = '';
-                    if (downvoteQualifies > 0) {
-                        if (downvoteQualifies & DOWNVOTE_QUALIFIES_QUESTION) { // eslint-disable-line no-bitwise
-                            downvoteText += 'question';
-                            //If the user has already downvoted the question, then they can not downvote again.
-                            //The information we need is not available until after window.onload, so wait for loading to be complete.
-                            if (document.readyState !== 'complete') {
-                                window.addEventListener('load', afterWindowLoad, false);
-                            } else {
-                                //This needs to not be called now, but after everything this script adds.
-                                setTimeout(afterWindowLoad, 0);
-                            }
-                        }
-                        if (downvoteQualifies & DOWNVOTE_QUALIFIES_ANSWER) { // eslint-disable-line no-bitwise
-                            //Downvoting the highest voted answer will qualify.
-                            //XXX Should detect that if that answer has already been downvoted by the user.
-                            if (downvoteText !== '') {
-                                downvoteText += ' & ';
-                            }
-                            downvoteText += 'answer';
-                            if (question.maxAnswerScoreCount > 1) {
-                                downvoteText += 's';
-                            }
+                    if (downvoteQualifies & DOWNVOTE_QUALIFIES_QUESTION) { // eslint-disable-line no-bitwise
+                        downvoteText = 'down-vote question will roomba';
+                        //If the user has already downvoted the question, then they can not downvote again.
+                        //The information we need is not available until after window.onload, so wait for loading to be complete.
+                        if (document.readyState !== 'complete') {
+                            window.addEventListener('load', afterWindowLoad, false);
+                        } else {
+                            //This needs to not be called now, but after everything this script adds.
+                            setTimeout(afterWindowLoad, 0);
                         }
                         //XXX Should add notification that a downvote will roomba sooner. This is the case when
                         //  qualified for 365 day roomba (0 score), but not qualified for 30 day roomba (-1 score).
-                        downvoteText = 'down-vote ' + downvoteText + ' will roomba';
                         roombas.some(function(roomba) {
                             if (downvoteQualifiesByRoomba[roomba.shortReasonPrefix]) {
                                 downvoteText += ' ' + roomba.downvoteText;
