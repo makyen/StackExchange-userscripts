@@ -91,7 +91,7 @@
     const isCloseReview = window.location.pathname.indexOf('/review/close/') === 0 || window.location.pathname === '/review/close';
     const isMagicTag = window.location.pathname.indexOf('/review/MagicTagReview') === 0;
     const isMeta = /(?:^|\.)meta\./.test(window.location.hostname);
-    const beforeRoombaTableSelector = '#question-header + div.grid, #qinfo, .reviewable-post-stats > table, .review-task .review-sidebar .review-information';
+    const beforeRoombaTableSelector = '#question-header + div.d-flex, #qinfo, .reviewable-post-stats > table, .review-task .review-sidebar .review-information';
     const sidebarSelector = '#sidebar, .sidebar, .review-task .review-sidebar';
     const sitesMustUseAPI = [].concat.apply([], [
         'pt.stackoverflow.com',
@@ -188,7 +188,7 @@
         let observerReaddRFTimeout;
 
         function underTitleObserver(mutations, observer) {
-            const firstQinfoCell = document.querySelector('#question-header + div.grid > .grid--cell');
+            const firstQinfoCell = document.querySelector('#question-header + div.d-flex > .flex--item');
             if (!firstQinfoCell) {
                 isViewsBelowTitle = false;
                 observer.disconnect();
@@ -214,7 +214,7 @@
 
         if (!document.getElementById('qinfo')) {
             //Either this is the new SE HTML as of 2019-07-25, or we need to exit.
-            const underTitleContainer = document.querySelector('#question-header + div.grid');
+            const underTitleContainer = document.querySelector('#question-header + div.d-flex');
             if (underTitleContainer) {
                 //Looks like it's the new HTML (2019-07-25)
                 isViewsBelowTitle = true;
@@ -662,7 +662,7 @@
                     //migrated_to
                 };
                 //views, in tooltip available from under the question title as of 2019-07-26/7.
-                const viewSelector = isViewsBelowTitle ? '#question-header + div.grid > .grid--cell' : '#qinfo p.label-key';
+                const viewSelector = isViewsBelowTitle ? '#question-header + div.d-flex > .flex--item' : '#qinfo p.label-key';
                 if (!question.view_count) {
                     question.view_count = +findElementWithMatchingTextInTooltip(viewSelector, 'times').title.replace(/(?:viewed|times|[,.\s])/ig, '');
                 }
@@ -825,11 +825,11 @@
                     '';
                 table.insertAdjacentHTML('beforeend', fieldRowHtml);
             } else if (isViewsBelowTitle) {
-                const cells = table.querySelectorAll('#question-header + div.grid > .grid--cell');
+                const cells = table.querySelectorAll('#question-header + div.d-flex > .flex--item');
                 const oldLastDiv = cells[cells.length - 1];
                 oldLastDiv.classList.add('mr16');
                 fieldRowHtml = '' +
-                    '<div class="grid--cell ws-nowrap mb8 mr16 roombaTooltip" id="roombaFieldRow">' +
+                    '<div class="flex--item ws-nowrap mb8 mr16 roombaTooltip" id="roombaFieldRow">' +
                     '    <span class="fc-light mr2" id="roombaFieldRowLabel">Roomba</span>' +
                     '    <span id="roombaField">...</span>' +
                     '</div>' +
@@ -1116,13 +1116,13 @@
                 '    min-height: 9px;\n' +
                 '    z-index: 998;\n' +
                 '}\n' +
-                '#question-header + div.grid #roombaFieldRow {\n' +
+                '#question-header + div.d-flex #roombaFieldRow {\n' +
                 '    transform: translateY(0px);\n' +
                 '}\n' +
-                '#question-header + div.grid #roombaField {\n' +
+                '#question-header + div.d-flex #roombaField {\n' +
                 '    display: inline-flex;\n' +
                 '}\n' +
-                '#question-header + div.grid #roombaField b {\n' +
+                '#question-header + div.d-flex #roombaField b {\n' +
                 '    font-weight: normal;\n' +
                 '}\n' +
                 '';
