@@ -880,8 +880,8 @@
                 '    font-size: inherit;\n' +
                 '    display: inline;\n' +
                 '}\n' +
-                '#roombaTableDivDiv {\n' +
-                '    width:' + (sidebarWidth - 8) + 'px;\n' +
+                '#sidebar #roombaTableDivDiv {\n' + //Limiting the width only makes sense in the sidebar.
+                '    width:' + (sidebarWidth - 8) + 'px;\n' + //This can be too narrow in some circumstances.
                 '}\n' +
                 '#roombaTable {\n' +
                 '    border-collapse: collapse;\n' +
