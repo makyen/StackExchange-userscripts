@@ -971,8 +971,8 @@
                 '    top: 0em;\n' +
                 '    left: -110%;\n' +
                 '    border: 1px solid;\n' +
-                '    box-shadow: 0px 2px 5px;\n' +
-                '    background-color:white;\n' +
+                '    box-shadow: 0px 2px 5px var(--theme-body-font-color);\n' +
+                '    background-color: var(--theme-background-color);\n' +
                 '    padding:5px;\n' +
                 '    opacity:0;\n' +
                 '    transition:opacity .2s ease-in-out;\n' +
