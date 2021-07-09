@@ -59,13 +59,13 @@
 
     //Config defaults
     var config = {
-        scrapePage: true,               //Scrape the page instead of using the SE API.
+        scrapePage: true,                  //Scrape the page instead of using the SE API.
         //Control what is displayed. Some combinations don't make much sense.
-        showShortRoombaStatus: true,    //Show/not show the entire "roomba" line under "viewed".
-        useTooltip: true,               //Put the larger Roomba table in a tooltip.
-        showShortReasons: false,        //Show a short version of the reasons for "roomba No".
-        showIfDownvoteWillRoomba: true, //Show if a downvote is enough to qualify for Roomba.
-        alwaysShowRoombaTable: false,   //If !useToolTip controls display of larger Roomba table
+        showShortRoombaStatus: true,       //Show/not show the entire "roomba" line under "viewed".
+        useTooltip: true,                  //Put the larger Roomba table in a tooltip.
+        showShortReasons: false,           //Show a short version of the reasons for "roomba No".
+        showIfDownvoteWillRoomba: false,   //Show if a downvote is enough to qualify for Roomba.
+        alwaysShowRoombaTable: false,      //If !useToolTip controls display of larger Roomba table
     };
 
     /* The following code for detecting browsers is from my answer at:
@@ -268,6 +268,7 @@
         let storedConfig = JSON.stringify({});
         return GM.getValue('config', storedConfig).then((inStorage) => {
             storedConfig = JSON.parse(inStorage);
+            let needsSave = false;
             Object.keys(storedConfig).forEach(function(key) {
                 config[key] = storedConfig[key];
             });
@@ -281,6 +282,17 @@
                     const message = 'Roomba Forecaster is now fetching data from the SE API on question pages. Once the changes SE is making to question status banners are complete for all sites, it\'s expected to return to scraping question pages for the data it needs.';
                     executeInPage(inPageNotify, true, `RoombaForecaster-notify-${Date.now()}`, message);
                 }
+                needsSave = true;
+            }
+            if (!config.disabledShowIfDownvoteWillRoomba202107) {
+                //It's been brought up that having the default be that we show that a downvote will Roomba may result in people using it inappropriately.
+                //  Rather than completely remove the functionality, it id disabled once for everyone, to effectively make the state similar to what it
+                //  would have been had it been disabled by default from the beginning.
+                config.disabledShowIfDownvoteWillRoomba202107 = true;
+                config.showIfDownvoteWillRoomba = false;
+                needsSave = true;
+            }
+            if (needsSave) {
                 return saveConfig();
             }
         }).catch((e) => {
@@ -994,6 +1006,33 @@
                 '    font-size:150%;\n' +
                 '    margin-bottom:.5em;\n' +
                 '}\n' +
+                '[data-roomba-title]:after {\n' +
+                '    content: attr(data-roomba-title);\n' +
+                '    position: absolute;\n' +
+                '    padding: 1px 5px 2px 5px;\n' +
+                '    bottom: 50%;\n' +
+                '    box-shadow: 1px 2px 5px var(--theme-body-font-color);\n' +
+                '    opacity: 0;\n' +
+                '    border: 1px solid var(--theme-body-font-color);\n' +
+                '    z-index: 99999;\n' +
+                '    visibility: hidden;\n' +
+                '    background-color: var(--theme-background-color);\n' +
+                '    width: 20vw;\n' +
+                '    text-indent: 0;\n' +
+                '    right: calc(100% + 35px);\n' +
+                '    pointer-events: none;\n' +
+                '    transform: translateY(50%);\n' +
+                '    -webkit-transform: translateY(50%);\n' +
+                '    -ms-transform: translateY(50%);\n' +
+                '}\n' +
+                '[data-roomba-title] {\n' +
+                '    position: relative;\n' +
+                '}\n' +
+                '[data-roomba-title]:hover:after {\n' +
+                '    opacity: 1;\n' +
+                '    transition: all 0.05s ease 0.15s;\n' +
+                '    visibility: visible;\n' +
+                '}\n' +
                 '';
             var cssViewsBelowTitle = '' +
                 '#roombaOptionsAbsoluteDiv {\n' +
@@ -1609,7 +1648,7 @@
                     '                <input type="checkbox" id="roombaOptionsCheckbox-showShortReasons"/>' +
                     '                Show a short version of the reasons the question does not qualify for Roomba.' +
                     '            </label>' +
-                    '            <label>' +
+                    '            <label data-roomba-title="If you enable showing that a downvote will cause the question to Roomba, be sure to keep in mind that downvoting *only* to cause a question to Roomba is inappropriate. On the other hand, if the post is downvote-worthy based on its content, then choosing to only downvote may be a reasonable allocation of the votes and flags you have available for moderating posts.">' +
                     '                <input type="checkbox" id="roombaOptionsCheckbox-showIfDownvoteWillRoomba"/>' +
                     '                Show if voting down the question or answer(s) will qualify the question for Roomba.' +
                     '            </label>' +
