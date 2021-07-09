@@ -2,7 +2,7 @@
 // @name         Roomba Forecaster
 // @author       Makyen
 // @author       Siguza
-// @version      2.2.5
+// @version      2.3.0
 // @description  Is Roomba going to delete the question? If not, why? If so, when?
 // @namespace    makyen-RoombaForecaster
 // @homepage     https://github.com/makyen/StackExchange-userscripts/tree/master/Roomba-Forecaster
@@ -12,6 +12,7 @@
 // @grant        GM.getValue
 // @grant        GM.setValue
 // @require      https://github.com/SO-Close-Vote-Reviewers/UserScripts/raw/master/gm4-polyfill.js
+// @require      https://cdn.jsdelivr.net/gh/makyen/extension-and-userscript-utilities@94cbac04cb446d35dd025974a7575b25b9e134ca/executeInPage.js
 // @include      /^https?://([^/]*\.)?stackoverflow\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
 // @include      /^https?://([^/]*\.)?serverfault\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
 // @include      /^https?://([^/]*\.)?superuser\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
@@ -20,7 +21,7 @@
 // @include      /^https?://([^/]*\.)?stackapps\.com/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
 // @include      /^https?://([^/]*\.)?mathoverflow\.net/(?:q(uestions)?/\d|review/close(?:/\d|/?$)|review/MagicTagReview).*$/
 // ==/UserScript==
-/* globals StackExchange */
+/* globals StackExchange, $, makyenUtilities */ //eslint-disable-line no-redeclare
 
 /*This is a fork of "Roombaforecast" by Siguza, which can be obtained from:
  *  https://github.com/Siguza/StackScripts/blob/master/RoombaForecast.user.js
@@ -54,16 +55,17 @@
 
 (function() {
     'use strict';
+    const executeInPage = makyenUtilities.executeInPage;
 
     //Config defaults
     var config = {
-        scrapePage: true,               //Scrape the page instead of using the SE API.
+        scrapePage: true,                  //Scrape the page instead of using the SE API.
         //Control what is displayed. Some combinations don't make much sense.
-        showShortRoombaStatus: true,    //Show/not show the entire "roomba" line under "viewed".
-        useTooltip: true,               //Put the larger Roomba table in a tooltip.
-        showShortReasons: false,        //Show a short version of the reasons for "roomba No".
-        showIfDownvoteWillRoomba: true, //Show if a downvote is enough to qualify for Roomba.
-        alwaysShowRoombaTable: false,   //If !useToolTip controls display of larger Roomba table
+        showShortRoombaStatus: true,       //Show/not show the entire "roomba" line under "viewed".
+        useTooltip: true,                  //Put the larger Roomba table in a tooltip.
+        showShortReasons: false,           //Show a short version of the reasons for "roomba No".
+        showIfDownvoteWillRoomba: false,   //Show if a downvote is enough to qualify for Roomba.
+        alwaysShowRoombaTable: false,      //If !useToolTip controls display of larger Roomba table
     };
 
     /* The following code for detecting browsers is from my answer at:
@@ -91,7 +93,7 @@
     const isCloseReview = window.location.pathname.indexOf('/review/close/') === 0 || window.location.pathname === '/review/close';
     const isMagicTag = window.location.pathname.indexOf('/review/MagicTagReview') === 0;
     const isMeta = /(?:^|\.)meta\./.test(window.location.hostname);
-    const beforeRoombaTableSelector = '#question-header + div.grid, #qinfo, .reviewable-post-stats > table, .review-task .review-sidebar .review-information';
+    const beforeRoombaTableSelector = '#question-header + div.d-flex, #qinfo, .reviewable-post-stats > table, .review-task .review-sidebar .review-information';
     const sidebarSelector = '#sidebar, .sidebar, .review-task .review-sidebar';
     const sitesMustUseAPI = [].concat.apply([], [
         'pt.stackoverflow.com',
@@ -188,7 +190,7 @@
         let observerReaddRFTimeout;
 
         function underTitleObserver(mutations, observer) {
-            const firstQinfoCell = document.querySelector('#question-header + div.grid > .grid--cell');
+            const firstQinfoCell = document.querySelector('#question-header + div.d-flex > .flex--item');
             if (!firstQinfoCell) {
                 isViewsBelowTitle = false;
                 observer.disconnect();
@@ -214,7 +216,7 @@
 
         if (!document.getElementById('qinfo')) {
             //Either this is the new SE HTML as of 2019-07-25, or we need to exit.
-            const underTitleContainer = document.querySelector('#question-header + div.grid');
+            const underTitleContainer = document.querySelector('#question-header + div.d-flex');
             if (underTitleContainer) {
                 //Looks like it's the new HTML (2019-07-25)
                 isViewsBelowTitle = true;
@@ -266,6 +268,7 @@
         let storedConfig = JSON.stringify({});
         return GM.getValue('config', storedConfig).then((inStorage) => {
             storedConfig = JSON.parse(inStorage);
+            let needsSave = false;
             Object.keys(storedConfig).forEach(function(key) {
                 config[key] = storedConfig[key];
             });
@@ -279,6 +282,17 @@
                     const message = 'Roomba Forecaster is now fetching data from the SE API on question pages. Once the changes SE is making to question status banners are complete for all sites, it\'s expected to return to scraping question pages for the data it needs.';
                     executeInPage(inPageNotify, true, `RoombaForecaster-notify-${Date.now()}`, message);
                 }
+                needsSave = true;
+            }
+            if (!config.disabledShowIfDownvoteWillRoomba202107) {
+                //It's been brought up that having the default be that we show that a downvote will Roomba may result in people using it inappropriately.
+                //  Rather than completely remove the functionality, it id disabled once for everyone, to effectively make the state similar to what it
+                //  would have been had it been disabled by default from the beginning.
+                config.disabledShowIfDownvoteWillRoomba202107 = true;
+                config.showIfDownvoteWillRoomba = false;
+                needsSave = true;
+            }
+            if (needsSave) {
                 return saveConfig();
             }
         }).catch((e) => {
@@ -376,101 +390,6 @@
         }
         //Indicate that we don't know what to do with the Object
         return null;
-    }
-
-    /*Copied from various other scripts of mine*/
-    function executeInPage(functionToRunInPage, leaveInPage, id) {
-        //Execute a function in the page context.
-        // Any additional arguments passed to this function are passed into the page to the
-        // functionToRunInPage.
-        // Such arguments must be Object, Array, functions, RegExp,
-        // Date, and/or other primitives (Boolean, null, undefined,
-        // Number, String, but not Symbol).  Circular references are
-        // not supported. Prototypes are not copied.
-        // Using () => doesn't set arguments, so can't use it to define this function.
-        // This has to be done without jQuery, as jQuery creates the script
-        // within this context, not the page context, which results in
-        // permission denied to run the function.
-        function convertToText(args) {
-            //This uses the fact that the arguments are converted to text which is
-            //  interpreted within a <script>. That means we can create other types of
-            //  objects by recreating their normal JavaScript representation.
-            //  It's actually easier to do this without JSON.stringify() for the whole
-            //  Object/Array.
-            var asText = '';
-            var level = 0;
-
-            function lineSeparator(adj, isntLast) {
-                level += adj - ((typeof isntLast === 'undefined' || isntLast) ? 0 : 1);
-                asText += (isntLast ? ',' : '') + '\n' + (new Array((level * 2) + 1)).join('');
-            }
-
-            function recurseObject(obj) {
-                if (Array.isArray(obj)) {
-                    asText += '[';
-                    lineSeparator(1);
-                    obj.forEach(function(value, index, array) {
-                        recurseObject(value);
-                        lineSeparator(0, index !== array.length - 1);
-                    });
-                    asText += ']';
-                } else if (obj === null) {
-                    asText += 'null';
-                } else if (obj === void (0)) {
-                    //undefined
-                    asText += 'void(0)';
-                } else if (Number.isNaN(obj)) {
-                    //Special cases for Number
-                    //Not a Number (NaN)
-                    asText += 'Number.NaN';
-                } else if (obj === 1 / 0) {
-                    // +Infinity
-                    asText += '1/0';
-                } else if (obj === 1 / -0) {
-                    // -Infinity
-                    asText += '1/-0';
-                } else if (obj instanceof RegExp || typeof obj === 'function') {
-                    //function
-                    asText += obj.toString();
-                } else if (obj instanceof Date) {
-                    asText += 'new Date("' + obj.toJSON() + '")';
-                } else if (typeof obj === 'object') {
-                    asText += '{';
-                    lineSeparator(1);
-                    Object.keys(obj).forEach(function(prop, index, array) {
-                        asText += JSON.stringify(prop) + ': ';
-                        recurseObject(obj[prop]);
-                        lineSeparator(0, index !== array.length - 1);
-                    });
-                    asText += '}';
-                } else if (['boolean', 'number', 'string'].indexOf(typeof obj) > -1) {
-                    asText += JSON.stringify(obj);
-                } else {
-                    console.log('Didn\'t handle: typeof obj:', typeof obj, '::  obj:', obj);
-                }
-            }
-            recurseObject(args);
-            return asText;
-        }
-        var newScript = document.createElement('script');
-        if (typeof id === 'string' && id) {
-            newScript.id = id;
-        }
-        var args = [];
-        //Using .slice(), or other Array methods, on arguments prevents optimization.
-        for (var index = 3; index < arguments.length; index++) {
-            args.push(arguments[index]);
-        }
-        newScript.textContent = '(' + functionToRunInPage.toString() + ').apply(null,' +
-            convertToText(args) + ');';
-        (document.head || document.documentElement).appendChild(newScript);
-        if (!leaveInPage) {
-            //Synchronous scripts are executed immediately and can be immediately removed.
-            //Scripts with asynchronous functionality *may* need to remain in the page
-            //  until complete. Exactly what's needed depends on actual usage.
-            document.head.removeChild(newScript);
-        }
-        return newScript;
     }
 
     function addOrUpdateRoomba() {
@@ -662,7 +581,7 @@
                     //migrated_to
                 };
                 //views, in tooltip available from under the question title as of 2019-07-26/7.
-                const viewSelector = isViewsBelowTitle ? '#question-header + div.grid > .grid--cell' : '#qinfo p.label-key';
+                const viewSelector = isViewsBelowTitle ? '#question-header + div.d-flex > .flex--item' : '#qinfo p.label-key';
                 if (!question.view_count) {
                     question.view_count = +findElementWithMatchingTextInTooltip(viewSelector, 'times').title.replace(/(?:viewed|times|[,.\s])/ig, '');
                 }
@@ -825,11 +744,11 @@
                     '';
                 table.insertAdjacentHTML('beforeend', fieldRowHtml);
             } else if (isViewsBelowTitle) {
-                const cells = table.querySelectorAll('#question-header + div.grid > .grid--cell');
+                const cells = table.querySelectorAll('#question-header + div.d-flex > .flex--item');
                 const oldLastDiv = cells[cells.length - 1];
                 oldLastDiv.classList.add('mr16');
                 fieldRowHtml = '' +
-                    '<div class="grid--cell ws-nowrap mb8 mr16 roombaTooltip" id="roombaFieldRow">' +
+                    '<div class="flex--item ws-nowrap mb8 mr16 roombaTooltip" id="roombaFieldRow">' +
                     '    <span class="fc-light mr2" id="roombaFieldRowLabel">Roomba</span>' +
                     '    <span id="roombaField">...</span>' +
                     '</div>' +
@@ -973,8 +892,8 @@
                 '    font-size: inherit;\n' +
                 '    display: inline;\n' +
                 '}\n' +
-                '#roombaTableDivDiv {\n' +
-                '    width:' + (sidebarWidth - 8) + 'px;\n' +
+                '#sidebar #roombaTableDivDiv {\n' + //Limiting the width only makes sense in the sidebar.
+                '    width:' + (sidebarWidth - 8) + 'px;\n' + //This can be too narrow in some circumstances.
                 '}\n' +
                 '#roombaTable {\n' +
                 '    border-collapse: collapse;\n' +
@@ -1052,8 +971,8 @@
                 '    top: 0em;\n' +
                 '    left: -110%;\n' +
                 '    border: 1px solid;\n' +
-                '    box-shadow: 0px 2px 5px;\n' +
-                '    background-color:white;\n' +
+                '    box-shadow: 0px 2px 5px var(--theme-body-font-color);\n' +
+                '    background-color: var(--theme-background-color);\n' +
                 '    padding:5px;\n' +
                 '    opacity:0;\n' +
                 '    transition:opacity .2s ease-in-out;\n' +
@@ -1087,6 +1006,33 @@
                 '    font-size:150%;\n' +
                 '    margin-bottom:.5em;\n' +
                 '}\n' +
+                '[data-roomba-title]:after {\n' +
+                '    content: attr(data-roomba-title);\n' +
+                '    position: absolute;\n' +
+                '    padding: 1px 5px 2px 5px;\n' +
+                '    bottom: 50%;\n' +
+                '    box-shadow: 1px 2px 5px var(--theme-body-font-color);\n' +
+                '    opacity: 0;\n' +
+                '    border: 1px solid var(--theme-body-font-color);\n' +
+                '    z-index: 99999;\n' +
+                '    visibility: hidden;\n' +
+                '    background-color: var(--theme-background-color);\n' +
+                '    width: 20vw;\n' +
+                '    text-indent: 0;\n' +
+                '    right: calc(100% + 35px);\n' +
+                '    pointer-events: none;\n' +
+                '    transform: translateY(50%);\n' +
+                '    -webkit-transform: translateY(50%);\n' +
+                '    -ms-transform: translateY(50%);\n' +
+                '}\n' +
+                '[data-roomba-title] {\n' +
+                '    position: relative;\n' +
+                '}\n' +
+                '[data-roomba-title]:hover:after {\n' +
+                '    opacity: 1;\n' +
+                '    transition: all 0.05s ease 0.15s;\n' +
+                '    visibility: visible;\n' +
+                '}\n' +
                 '';
             var cssViewsBelowTitle = '' +
                 '#roombaOptionsAbsoluteDiv {\n' +
@@ -1116,13 +1062,13 @@
                 '    min-height: 9px;\n' +
                 '    z-index: 998;\n' +
                 '}\n' +
-                '#question-header + div.grid #roombaFieldRow {\n' +
+                '#question-header + div.d-flex #roombaFieldRow {\n' +
                 '    transform: translateY(0px);\n' +
                 '}\n' +
-                '#question-header + div.grid #roombaField {\n' +
+                '#question-header + div.d-flex #roombaField {\n' +
                 '    display: inline-flex;\n' +
                 '}\n' +
-                '#question-header + div.grid #roombaField b {\n' +
+                '#question-header + div.d-flex #roombaField b {\n' +
                 '    font-weight: normal;\n' +
                 '}\n' +
                 '';
@@ -1702,7 +1648,7 @@
                     '                <input type="checkbox" id="roombaOptionsCheckbox-showShortReasons"/>' +
                     '                Show a short version of the reasons the question does not qualify for Roomba.' +
                     '            </label>' +
-                    '            <label>' +
+                    '            <label data-roomba-title="If you enable showing that a downvote will cause the question to Roomba, be sure to keep in mind that downvoting *only* to cause a question to Roomba is inappropriate. On the other hand, if the post is downvote-worthy based on its content, then choosing to only downvote may be a reasonable allocation of the votes and flags you have available for moderating posts.">' +
                     '                <input type="checkbox" id="roombaOptionsCheckbox-showIfDownvoteWillRoomba"/>' +
                     '                Show if voting down the question or answer(s) will qualify the question for Roomba.' +
                     '            </label>' +
