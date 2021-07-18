@@ -30,16 +30,16 @@
         ['question', 'answer'].forEach((type) => {
             $('a.' + type + '-hyperlink').each(function() {
                 const $this = $(this);
-                const currentFlag = $this.parent().find('.flag-post-link');
+                const currentFlag = $this.parent().find('.js-flag-post-link');
                 if (!currentFlag.length) {
                     const href = $this.attr('href');
                     if (href) {
                         const matches = type === 'answer' ? href.match(/^.*#(\d+)$/) : href.match(/^\/q(?:uestions)?\/(\d+)\/.*$/);
                         if (matches && matches[1]) {
                             const postId = matches[1];
-                            $this.before('<a href="#" class="flag-post-link" title="flag this post for serious problems or moderator attention" data-postid="' + postId + '" style="margin-left:1em;margin-right:1em;display:inline;width:auto;">&#9873;</a>').css('display', 'inline');
-                            $this.parent().find('.flag-post-link').data({
-                                postid: postId,
+                            $this.before('<a href="#" class="js-flag-post-link" title="flag this post for serious problems or moderator attention" data-post-id="' + postId + '" style="margin-left:1em;margin-right:1em;display:inline;width:auto;">&#9873;</a>').css('display', 'inline');
+                            $this.parent().find('.js-flag-post-link').data({
+                                'post-id': postId,
                                 loadedTimestamp: now,
                             });
                         }
