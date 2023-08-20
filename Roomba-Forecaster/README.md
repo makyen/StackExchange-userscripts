@@ -60,6 +60,26 @@ is displayed in the larger table (either as a tooltip, or
 always displayed).  
 ![short reasons](https://github.com/makyen/StackExchange-userscripts/raw/master/Roomba-Forecaster/README-assets/tooltip-short-reasons.png)
 
+## Load via bookmarklet (e.g., on mobile browsers)
+
+```javascript
+javascript:void(function(){
+    if (typeof window.GM === 'undefined') {
+        window.GM = {};
+    }
+    GM.setValue = async (key, value) => localStorage[`makyen-RoombaForecaster-bookmarklet-${key}`] = value;
+    GM.getValue = async (key, defaultValue) => {
+        const value = localStorage[`makyen-RoombaForecaster-bookmarklet-${key}`];
+        return typeof value === 'undefined' ? defaultValue : value;
+    };
+    GM.setValue('config', '{"scrapePage":false,"showShortRoombaStatus":true, "useTooltip":true, "showShortReasons":false, "showIfDownvoteWillRoomba":false, "alwaysShowRoombaTable":false, "disabledScraping201910OriginalScrapePage":true, "disabledScraping201910":true, "disabledShowIfDownvoteWillRoomba202107":true}').then(() => {
+        $.getScript('https://cdn.jsdelivr.net/gh/makyen/extension-and-userscript-utilities@10254c2cba80cbf5f34dc69cd87ba21caa9eb911/executeInPage.js').then(() => {
+            $.getScript('https://cdn.jsdelivr.net/gh/makyen/StackExchange-userscripts/Roomba-Forecaster/RoombaForecaster.user.js');
+        });
+    });
+})();
+```
+
 ## Compatibility Notes
 Roomba Forecaster has been tested on Chrome, Firefox, Opera, and Edge. It should be compatible with other browsers.
  
